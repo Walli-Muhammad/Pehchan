@@ -14,7 +14,6 @@ export default function CustomCursor() {
   const cursorYSpring = useSpring(cursorY, springConfig);
 
   useEffect(() => {
-    // Check if on a desktop device
     if (!window.matchMedia('(pointer: fine)').matches) return;
 
     const moveCursor = (e: MouseEvent) => {
@@ -24,12 +23,10 @@ export default function CustomCursor() {
 
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // Look for the closest parent with data-cursor attribute
-      const cursorTarget = target.closest('[data-cursor]') as HTMLElement;
-      
+      const cursorTarget = target.closest('[data-cursor]') as HTMLElement | null;
       if (cursorTarget) {
         setIsHovered(true);
-        setHoverText(cursorTarget.getAttribute('data-cursor') || '');
+        setHoverText(cursorTarget.getAttribute('data-cursor') ?? '');
       } else {
         setIsHovered(false);
         setHoverText('');
@@ -45,14 +42,16 @@ export default function CustomCursor() {
     };
   }, [cursorX, cursorY]);
 
-  // Hide entirely if we aren't on a fine pointer device (prevents bugging out on mobile)
+  // Don't render on touch/coarse pointer devices
   if (typeof window !== 'undefined' && !window.matchMedia('(pointer: fine)').matches) {
     return null;
   }
 
   return (
     <motion.div
-      className="pointer-events-none fixed left-0 top-0 z-[9999] flex flex-col items-center justify-center mix-blend-difference"
+      // ─── NO mix-blend-difference: using a solid white fill so the 
+      // cursor is always visible on the dark zinc-950 product grid background.
+      className="pointer-events-none fixed left-0 top-0 z-[9999] flex items-center justify-center"
       style={{
         translateX: '-50%',
         translateY: '-50%',
@@ -64,15 +63,16 @@ export default function CustomCursor() {
         animate={{
           width: isHovered ? 80 : 32,
           height: isHovered ? 80 : 32,
-          backgroundColor: isHovered ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 1)',
+          backgroundColor: 'rgba(255, 255, 255, 1)',
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        className="flex items-center justify-center rounded-full text-black font-semibold text-[10px] sm:text-xs tracking-widest overflow-hidden"
+        className="flex items-center justify-center rounded-full text-black font-semibold text-[10px] tracking-widest overflow-hidden"
       >
         <motion.span
           initial={{ opacity: 0 }}
           animate={{ opacity: isHovered && hoverText ? 1 : 0 }}
-          className="whitespace-nowrap"
+          transition={{ duration: 0.15 }}
+          className="whitespace-nowrap select-none"
         >
           {hoverText.toUpperCase()}
         </motion.span>
