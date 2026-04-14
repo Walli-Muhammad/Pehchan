@@ -6,6 +6,7 @@ import CustomCursor from '@/components/Interactions/CustomCursor';
 import Navbar from '@/components/Navbar/Navbar';
 import CartDrawer from '@/components/Cart/CartDrawer';
 import CheckoutModal from '@/components/Checkout/CheckoutModal';
+import SearchModal from '@/components/Search/SearchModal';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -30,6 +31,7 @@ export default function RootLayout({
         <Navbar />
         <CartDrawer />
         <CheckoutModal />
+        <SearchModal />
 
         <SmoothScrollProvider>
           {children}

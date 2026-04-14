@@ -9,8 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@splinetool/react-spline": "latest",
-    "@splinetool/runtime": "latest",
     "@supabase/supabase-js": "^2.103.0",
     "framer-motion": "^11.0.0",
     "gsap": "^3.12.5",

@@ -1,82 +1,105 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion, useMotionValue, useSpring } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 
 export default function CustomCursor() {
-  const cursorX = useMotionValue(-100);
-  const cursorY = useMotionValue(-100);
+  const [isMounted, setIsMounted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [hoverText, setHoverText] = useState('');
+  const [visible, setVisible] = useState(false);
+  const cursorRef = useRef<HTMLDivElement>(null);
 
-  const springConfig = { damping: 25, stiffness: 400, mass: 0.5 };
-  const cursorXSpring = useSpring(cursorX, springConfig);
-  const cursorYSpring = useSpring(cursorY, springConfig);
-
+  // Effect 1: Mark client-side mount. The cursor div renders only after this.
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Effect 2: Boot the rAF tracking loop — only after the cursor div is in the DOM.
+  useEffect(() => {
+    if (!isMounted) return;
     if (!window.matchMedia('(pointer: fine)').matches) return;
 
-    const moveCursor = (e: MouseEvent) => {
-      cursorX.set(e.clientX);
-      cursorY.set(e.clientY);
+    let rafId: number;
+    let targetX = window.innerWidth / 2;
+    let targetY = window.innerHeight / 2;
+    let currentX = targetX;
+    let currentY = targetY;
+
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    const tick = () => {
+      currentX = lerp(currentX, targetX, 0.12);
+      currentY = lerp(currentY, targetY, 0.12);
+      if (cursorRef.current) {
+        cursorRef.current.style.left = `${currentX}px`;
+        cursorRef.current.style.top  = `${currentY}px`;
+      }
+      rafId = requestAnimationFrame(tick);
     };
 
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const cursorTarget = target.closest('[data-cursor]') as HTMLElement | null;
-      if (cursorTarget) {
+    rafId = requestAnimationFrame(tick);
+
+    const onMove = (e: MouseEvent) => {
+      targetX = e.clientX;
+      targetY = e.clientY;
+      setVisible(true);
+    };
+
+    const onOver = (e: MouseEvent) => {
+      const el = (e.target as HTMLElement).closest('[data-cursor]') as HTMLElement | null;
+      if (el) {
         setIsHovered(true);
-        setHoverText(cursorTarget.getAttribute('data-cursor') ?? '');
+        setHoverText(el.getAttribute('data-cursor') ?? '');
       } else {
         setIsHovered(false);
         setHoverText('');
       }
     };
 
-    window.addEventListener('mousemove', moveCursor);
-    window.addEventListener('mouseover', handleMouseOver);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseover', onOver);
 
     return () => {
-      window.removeEventListener('mousemove', moveCursor);
-      window.removeEventListener('mouseover', handleMouseOver);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseover', onOver);
+      cancelAnimationFrame(rafId);
     };
-  }, [cursorX, cursorY]);
+  }, [isMounted]); // re-runs only when isMounted flips to true
 
-  // Don't render on touch/coarse pointer devices
-  if (typeof window !== 'undefined' && !window.matchMedia('(pointer: fine)').matches) {
-    return null;
-  }
+  // Don't render on server (SSR) or before client mount — prevents hydration mismatch
+  if (!isMounted) return null;
 
   return (
-    <motion.div
-      // ─── NO mix-blend-difference: using a solid white fill so the 
-      // cursor is always visible on the dark zinc-950 product grid background.
-      className="pointer-events-none fixed left-0 top-0 z-[9999] flex items-center justify-center"
-      style={{
-        translateX: '-50%',
-        translateY: '-50%',
-        x: cursorXSpring,
-        y: cursorYSpring,
-      }}
+    <div
+      ref={cursorRef}
+      // Position driven by rAF → style.left + style.top (no framer transform conflict)
+      // -translate-x/y is pure CSS centering — no competing transform
+      className="pointer-events-none fixed top-0 left-0 z-[99999] -translate-x-1/2 -translate-y-1/2"
+      style={{ willChange: 'left, top' }}
     >
+      {/* Framer motion only animates size and opacity — no position transforms */}
       <motion.div
         animate={{
-          width: isHovered ? 80 : 32,
-          height: isHovered ? 80 : 32,
-          backgroundColor: 'rgba(255, 255, 255, 1)',
+          width:   isHovered ? 80 : 32,
+          height:  isHovered ? 80 : 32,
+          opacity: visible ? 1 : 0,
         }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        className="flex items-center justify-center rounded-full text-black font-semibold text-[10px] tracking-widest overflow-hidden"
+        transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+        className="flex items-center justify-center rounded-full bg-white text-black select-none font-bold text-[10px] tracking-widest overflow-hidden"
+        style={{
+          // High-contrast outline so cursor is visible on both dark and bright video backgrounds
+          boxShadow: '0 0 0 2px rgba(0,0,0,0.3), 0 0 0 3px rgba(255,255,255,0.15), 0 4px 20px rgba(0,0,0,0.4)',
+        }}
       >
         <motion.span
-          initial={{ opacity: 0 }}
           animate={{ opacity: isHovered && hoverText ? 1 : 0 }}
           transition={{ duration: 0.15 }}
-          className="whitespace-nowrap select-none"
+          className="whitespace-nowrap"
         >
           {hoverText.toUpperCase()}
         </motion.span>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }

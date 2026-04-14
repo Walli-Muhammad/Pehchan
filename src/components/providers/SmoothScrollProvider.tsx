@@ -1,8 +1,6 @@
 'use client';
 
-import { useEffect, useRef, ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, ReactNode } from 'react';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -12,14 +10,11 @@ interface SmoothScrollProviderProps {
 }
 
 export default function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
-  const lenisRef = useRef<Lenis | null>(null);
-  const pathname = usePathname();
-
   useEffect(() => {
-    // 1. Initialize Lenis instance
+    // 1. Initialise Lenis smooth scroll
     const lenis = new Lenis({
       duration: 1.2,
-      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
@@ -27,38 +22,23 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
       touchMultiplier: 2,
     });
 
-    lenisRef.current = lenis;
-
-    // 2. Synchronize Lenis scroll position with GSAP's ScrollTrigger
+    // 2. Sync Lenis scroll position → GSAP ScrollTrigger
     lenis.on('scroll', ScrollTrigger.update);
 
-    // 3. Connect GSAP ticker to Lenis requestAnimationFrame
-    const update = (time: number) => {
-      lenisRef.current?.raf(time * 1000);
-    };
-
-    gsap.ticker.add(update);
-    gsap.ticker.lagSmoothing(0); // Prevents GSAP lag on tab switch
+    // 3. Drive Lenis via GSAP ticker (single rAF loop)
+    const rafUpdate = (time: number) => lenis.raf(time * 1000);
+    gsap.ticker.add(rafUpdate);
+    gsap.ticker.lagSmoothing(0); // prevent GSAP lag on tab switch
 
     return () => {
       lenis.destroy();
-      gsap.ticker.remove(update);
+      gsap.ticker.remove(rafUpdate);
     };
   }, []);
 
-  return (
-    // Wrap the app to enable Framer Motion enter/exit route transitions globally
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={pathname}
-        initial={false}
-        animate={{ opacity: 1, filter: 'blur(0px)' }}
-        exit={{ opacity: 0, filter: 'blur(8px)' }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="flex min-h-screen w-full flex-col"
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
-  );
+  // No wrapper div, no motion.div, no AnimatePresence.
+  // Previously, the motion.div with `filter: blur(0px)` was creating a new CSS
+  // stacking context during hydration, trapping GSAP animations and making
+  // the Hero + Cursor invisible until a hard refresh.
+  return <>{children}</>;
 }
