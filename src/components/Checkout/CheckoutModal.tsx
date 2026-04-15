@@ -303,7 +303,7 @@ export default function CheckoutModal() {
                 </div>
 
                 <p className="text-zinc-600 text-xs max-w-xs">
-                  A confirmation will be sent to <span className="text-zinc-400">{form.customerEmail}</span>. We'll begin processing your order shortly.
+                  A confirmation will be sent to <span className="text-zinc-400">{form.customerEmail}</span>. We&apos;ll begin processing your order shortly.
                 </p>
 
                 <button

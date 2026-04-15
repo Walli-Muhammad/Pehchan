@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@/store/ui';
 import { supabase, type Product } from '@/lib/supabase';
@@ -141,7 +142,7 @@ export default function SearchModal() {
                     className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-zinc-800/50 transition-colors text-left group"
                   >
                     {product.image_url ? (
-                      <img src={product.image_url} alt={product.title} className="w-12 h-12 rounded object-cover border border-zinc-800" />
+                      <Image src={product.image_url} alt={product.title} width={48} height={48} className="w-12 h-12 rounded object-cover border border-zinc-800" />
                     ) : (
                       <div className="w-12 h-12 rounded bg-zinc-800 flex items-center justify-center border border-zinc-700">
                         <svg className="w-5 h-5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

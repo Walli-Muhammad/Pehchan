@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCartStore } from '@/store/cart';
 import { useUIStore } from '@/store/ui';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
@@ -9,6 +9,11 @@ export default function Navbar() {
   const { toggleCart, getTotalItems } = useCartStore();
   const { toggleSearch } = useUIStore();
   const totalItems = getTotalItems();
+
+  // isMounted prevents the Zustand localStorage-derived cart count from
+  // causing a server/client hydration mismatch (server has no localStorage).
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
 
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
@@ -100,7 +105,7 @@ export default function Navbar() {
             <span className="text-xs font-semibold tracking-wider hidden sm:block uppercase">
               Cart
             </span>
-            {totalItems > 0 && (
+            {isMounted && totalItems > 0 && (
               <motion.span
                 key={totalItems}
                 initial={{ scale: 0.5, opacity: 0 }}

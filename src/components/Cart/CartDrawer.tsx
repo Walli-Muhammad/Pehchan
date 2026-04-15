@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/store/cart';
 import type { CartItem } from '@/store/cart';
@@ -29,12 +30,13 @@ function CartLineItem({ item }: { item: CartItem }) {
       className="flex gap-4 py-5 border-b border-zinc-800 last:border-0"
     >
       {/* Thumbnail */}
-      <div className="w-20 h-24 rounded-lg overflow-hidden bg-zinc-800 shrink-0">
+      <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-zinc-800 shrink-0">
         {item.productImage && (
-          <img
+          <Image
             src={item.productImage}
             alt={item.productTitle}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
           />
         )}
       </div>
