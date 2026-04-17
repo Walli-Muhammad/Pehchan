@@ -108,19 +108,27 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // Custom POD items — price is hardcoded server-side, never from client
+    // Custom POD items — price is hardcoded server-side, never from client.
+    // product_id and variant_id are set to NULL because the DB columns are
+    // typed UUID — inserting the "custom-pod-xxx" string would cause a
+    // '22P02 invalid input syntax for type uuid' Postgres error.
     const verifiedPod = customPodItems.map((item) => {
       subtotal += POD_PRICE_PKR * item.quantity;
-      return {
-        product_id:        item.productId,
-        variant_id:        item.variantId,
+      const podRow = {
+        product_id:        null,   // ← NULL, not the custom-pod-xxx string
+        variant_id:        null,   // ← NULL, not the custom-pod-variant-xxx string
         product_title:     'Custom Pehchan Tee (POD)',
         product_image_url: null,
         quantity:          item.quantity,
         unit_price_pkr:    POD_PRICE_PKR,
-        pod_customization: item.podCustomizations ?? null,
+        pod_customization: {
+          ...(item.podCustomizations ?? {}),
+          _custom_pod_ref: item.productId,   // store the original ID for reference
+        },
         is_pod:            true,
       };
+      console.log('[checkout] Custom POD item payload:', podRow);
+      return podRow;
     });
 
     const verifiedItems = [...verifiedRegular, ...verifiedPod];

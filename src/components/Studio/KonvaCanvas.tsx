@@ -62,23 +62,26 @@ export default function KonvaCanvas({
       width={stageWidth}
       height={stageHeight}
       onMouseDown={(e) => {
-        // Deselect when clicking on empty area
-        const clickedOnEmpty = e.target === e.target.getStage();
-        if (clickedOnEmpty) {
-          setIsSelected(false);
-        }
+        // Deselect when clicking Stage or the background shirt image.
+        // Note: the background <Image> covers the full stage, so clicking
+        // it targets the Image node — NOT the Stage — hence the name check.
+        const isBackground =
+          e.target === e.target.getStage() ||
+          e.target.name() === 'background';
+        if (isBackground) setIsSelected(false);
       }}
       onTouchStart={(e) => {
-        const clickedOnEmpty = e.target === e.target.getStage();
-        if (clickedOnEmpty) {
-          setIsSelected(false);
-        }
+        const isBackground =
+          e.target === e.target.getStage() ||
+          e.target.name() === 'background';
+        if (isBackground) setIsSelected(false);
       }}
     >
       <Layer>
         {/* Step 1: Base Product Model */}
         {modelImage && (
           <KonvaImage
+            name="background"   // ← used by deselect handler above
             image={modelImage}
             x={offsetX}
             y={offsetY}
