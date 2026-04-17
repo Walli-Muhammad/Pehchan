@@ -64,6 +64,18 @@ export default function Navbar() {
           Pehchan
         </a>
 
+        {/* Center Links */}
+        <div className="hidden sm:flex items-center gap-6">
+          <a
+            href="/studio"
+            className={`text-sm font-semibold tracking-widest uppercase transition-colors ${
+              isScrolled ? 'text-zinc-400 hover:text-white' : 'text-white/80 hover:text-white drop-shadow-md'
+            }`}
+          >
+            PRINT ON DEMAND
+          </a>
+        </div>
+
         {/* Right side controls */}
         <div className="flex items-center gap-2 sm:gap-4">
           
