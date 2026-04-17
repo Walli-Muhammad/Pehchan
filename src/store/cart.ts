@@ -139,8 +139,35 @@ export const useCartStore = create<CartState>()(
         ),
     }),
     {
-      name: 'pehchan-cart',        // localStorage key
-      storage: createJSONStorage(() => localStorage),
+      name: 'pehchan-cart',
+      // Safe storage adapter: catches QuotaExceededError and retries after
+      // stripping the base64 productImage from POD items (the heavy field).
+      storage: createJSONStorage(() => ({
+        getItem: (key: string) => localStorage.getItem(key),
+        removeItem: (key: string) => localStorage.removeItem(key),
+        setItem: (key: string, value: string) => {
+          try {
+            localStorage.setItem(key, value);
+          } catch (err) {
+            if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+              // Strip base64 images from POD items and try again
+              try {
+                const parsed = JSON.parse(value);
+                if (parsed?.state?.items) {
+                  parsed.state.items = parsed.state.items.map((item: CartItem) =>
+                    item.isPod ? { ...item, productImage: null } : item
+                  );
+                  localStorage.setItem(key, JSON.stringify(parsed));
+                }
+              } catch {
+                // If the second attempt also fails, silently discard.
+                // Cart will still work for the current session (in-memory).
+                console.warn('[cart] localStorage quota exceeded — cart will not persist this session.');
+              }
+            }
+          }
+        },
+      })),
       // Only persist the items array; not the UI open/close state
       partialize: (state) => ({ items: state.items }),
     }

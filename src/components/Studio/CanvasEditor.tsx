@@ -67,8 +67,15 @@ export default function CanvasEditor() {
   const handleAddToCart = () => {
     if (!uploadedLogo || !selectedSize || !stageRef.current) return;
 
-    // Snapshot the design
-    const dataUrl = stageRef.current.toDataURL({ pixelRatio: 1.5 });
+    // Generate a tiny JPEG thumbnail for the cart preview.
+    // High pixelRatio (1.5) PNG was ~2-4 MB as base64 — one item fills 
+    // localStorage's entire ~5 MB quota and throws QuotaExceededError.
+    // At pixelRatio 0.2 + JPEG quality 0.5, the snapshot is ~15-40 KB.
+    const dataUrl = stageRef.current.toDataURL({
+      mimeType: 'image/jpeg',
+      quality: 0.5,
+      pixelRatio: 0.2,
+    });
     
     // Add custom product to cart
     addItem({
