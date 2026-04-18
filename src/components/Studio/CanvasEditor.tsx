@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useCartStore } from '@/store/cart';
+import AIPreviewModal from './AIPreviewModal';
 
 // Next.js dynamic import (ssr: false) is CRITICAL to prevent 'window is not defined'
 // hydration crashes from the react-konva / konva module which rely on canvas/DOM.
@@ -25,12 +26,27 @@ const SWATCHES = [
 
 const SIZES = ['S', 'M', 'L', 'XL', '2XL'];
 
+const AI_STYLES = [
+  { id: 'close-up', label: 'Studio Close-up', prompt: 'High-resolution photorealistic close-up of a heavyweight t-shirt worn by a model. Focus on the upper torso and chest area, 3/4 angle. The fabric texture is clearly visible with natural folds. Soft directional studio lighting enhances the printed design without distortion. 50mm lens, shallow depth of field, 8k quality, realistic skin tones.' },
+  { id: 'flat-lay', label: 'Flat Lay (Wood)', prompt: 'Top-down flat lay photography of a folded premium t-shirt resting on a textured, rustic oak wooden table. The custom graphic is sharply visible on the chest. Warm, natural morning sunlight streaming from a nearby window, casting soft, realistic shadows across the fabric and wood. Minimalist aesthetic, 8k resolution, highly detailed cotton texture.' },
+  { id: 'urban', label: 'Urban Streetwear', prompt: 'Candid street-style photography of a model wearing a custom t-shirt in a modern urban environment. Blurred concrete and subtle city lights in the background (bokeh effect). The t-shirt graphic is sharp and photorealistic, absorbing the natural shadows and folds of the fabric. Cinematic lighting, 35mm lens, ultra-detailed.' },
+  { id: 'hanger', label: 'Hanger (E-com)', prompt: 'Ultra-crisp ecommerce product photography of a t-shirt hanging on a premium minimalist wooden hanger against a seamless neutral grey backdrop. Studio strobe lighting, perfect exposure, sharp edge-to-edge focus. The graphic appears authentically screen-printed onto the high-quality cotton fabric. No artifacts.' },
+];
+
+
 export default function CanvasEditor() {
   const { addItem, openCart } = useCartStore();
   const [selectedModel, setSelectedModel] = useState(MODELS[0].file);
   const [shirtColor, setShirtColor] = useState(SWATCHES[0].hex);
   const [uploadedLogo, setUploadedLogo] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [aiStyle, setAiStyle] = useState(AI_STYLES[0].id);
+
+  // AI Modal State
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiImageUrl, setAiImageUrl] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
@@ -97,6 +113,41 @@ export default function CanvasEditor() {
     });
 
     openCart();
+  };
+
+  const handleGeneratePreview = async () => {
+    if (!stageRef.current) return;
+    setIsAiModalOpen(true);
+    setIsAiLoading(true);
+    setAiError(null);
+    setAiImageUrl(null);
+
+    try {
+      const dataUrl = stageRef.current.toDataURL({
+        mimeType: 'image/jpeg',
+        pixelRatio: 1.5, 
+      });
+
+      const selectedPrompt = AI_STYLES.find((s) => s.id === aiStyle)?.prompt || '';
+
+      const res = await fetch('/api/generate-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataUrl, prompt: selectedPrompt }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to generate preview');
+      }
+
+      setAiImageUrl(data.imageUrl);
+    } catch (err: any) {
+      setAiError(err.message || 'An error occurred during generation.');
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   return (
@@ -173,9 +224,25 @@ export default function CanvasEditor() {
               )}
             </div>
 
+            {/* AI Preview Style Selector */}
+            <div>
+              <label className="text-xs uppercase tracking-widest text-zinc-500 mb-3 block">3. PHOTOSHOOT STYLE</label>
+              <select
+                value={aiStyle}
+                onChange={(e) => setAiStyle(e.target.value)}
+                className="w-full bg-zinc-900 border border-zinc-700 text-sm text-zinc-300 rounded px-3 py-3 focus:outline-none focus:border-indigo-500 appearance-none"
+              >
+                {AI_STYLES.map((style) => (
+                  <option key={style.id} value={style.id}>
+                    {style.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Size Selector */}
             <div>
-              <label className="text-xs uppercase tracking-widest text-zinc-500 mb-3 block">3. Select Size</label>
+              <label className="text-xs uppercase tracking-widest text-zinc-500 mb-3 block">4. Select Size</label>
               <div className="flex gap-2">
                 {SIZES.map((size) => (
                   <button
@@ -196,11 +263,17 @@ export default function CanvasEditor() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-zinc-800">
+        <div className="mt-8 pt-6 border-t border-zinc-800 flex flex-col gap-3">
+           <button 
+             onClick={handleGeneratePreview}
+             className="w-full py-4 uppercase tracking-[0.15em] text-sm font-bold transition-all bg-indigo-600 text-white hover:bg-indigo-500 shadow-xl rounded"
+           >
+             GENERATE AI PREVIEW
+           </button>
            <button 
              onClick={handleAddToCart}
              disabled={!uploadedLogo || !selectedSize}
-             className={`w-full py-4 uppercase tracking-[0.2em] text-sm font-bold transition-all ${
+             className={`w-full py-4 uppercase tracking-[0.2em] text-sm font-bold transition-all rounded ${
                uploadedLogo && selectedSize
                  ? 'bg-white text-black hover:bg-zinc-200 shadow-xl' 
                  : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
@@ -211,6 +284,14 @@ export default function CanvasEditor() {
         </div>
 
       </div>
+
+      <AIPreviewModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        isLoading={isAiLoading}
+        imageUrl={aiImageUrl}
+        error={aiError}
+      />
     </div>
   );
 }
