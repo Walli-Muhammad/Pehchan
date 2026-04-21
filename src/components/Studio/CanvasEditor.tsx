@@ -169,7 +169,7 @@ export default function CanvasEditor() {
       </div>
 
       {/* 30% Right: Controls pane */}
-      <div className="w-full lg:w-[30%] lg:min-w-[320px] max-w-sm flex flex-col gap-8 p-8 border-l border-zinc-800 bg-zinc-950/50 backdrop-blur-xl overflow-y-auto">
+      <div className="w-full lg:w-[30%] lg:min-w-[320px] max-w-sm flex flex-col gap-8 p-10 border-l border-zinc-800/50 bg-zinc-950/80 backdrop-blur-md overflow-y-auto">
         <div>
           <h2 className="text-xl font-bold uppercase tracking-widest mb-6 border-b border-zinc-800 pb-2">Design Studio</h2>
           
@@ -199,7 +199,7 @@ export default function CanvasEditor() {
             {/* Logo Upload */}
             <div>
               <label className="text-xs uppercase tracking-widest text-zinc-500 mb-3 block">2. Upload Logo</label>
-              <label className="cursor-pointer flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-zinc-700 hover:border-zinc-500 rounded bg-zinc-900 transition-colors">
+              <label className="cursor-pointer flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-zinc-700 rounded-xl bg-zinc-900/30 transition-all duration-300 hover:border-indigo-500/50 hover:bg-zinc-900/50 hover:shadow-[0_0_20px_rgba(99,102,241,0.1)]">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <svg className="w-8 h-8 mb-3 text-zinc-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                     <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
@@ -248,10 +248,10 @@ export default function CanvasEditor() {
                   <button
                     key={size}
                     onClick={() => setSelectedSize(size)}
-                    className={`w-10 h-10 flex items-center justify-center text-sm font-semibold rounded transition-colors ${
+                    className={`w-10 h-10 flex items-center justify-center text-sm font-semibold rounded-full transition-all duration-300 ${
                       selectedSize === size
-                        ? 'bg-white text-black'
-                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                        ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.3)]'
+                        : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800 shadow-inner'
                     }`}
                   >
                     {size}
@@ -263,20 +263,28 @@ export default function CanvasEditor() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-zinc-800 flex flex-col gap-3">
+        <div className="mt-auto pt-8 border-t border-zinc-800/50 flex flex-col gap-4">
+           {/* Secondary Button: AI Preview */}
            <button 
              onClick={handleGeneratePreview}
-             className="w-full py-4 uppercase tracking-[0.15em] text-sm font-bold transition-all bg-indigo-600 text-white hover:bg-indigo-500 shadow-xl rounded"
+             disabled={!uploadedLogo}
+             className={`w-full py-3.5 uppercase tracking-[0.15em] text-xs font-bold transition-all duration-300 rounded-lg flex items-center justify-center gap-2 ${
+               uploadedLogo
+                 ? 'bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white shadow-lg'
+                 : 'bg-zinc-900/50 border border-zinc-800/50 text-zinc-600 cursor-not-allowed'
+             }`}
            >
-             GENERATE AI PREVIEW
+             <span>✨ Generate AI Preview</span>
            </button>
+
+           {/* Primary Button: Add to Cart */}
            <button 
              onClick={handleAddToCart}
              disabled={!uploadedLogo || !selectedSize}
-             className={`w-full py-4 uppercase tracking-[0.2em] text-sm font-bold transition-all rounded ${
+             className={`w-full py-4 uppercase tracking-[0.2em] text-sm font-black transition-all duration-300 rounded-lg ${
                uploadedLogo && selectedSize
-                 ? 'bg-white text-black hover:bg-zinc-200 shadow-xl' 
-                 : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                 ? 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02]' 
+                 : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
              }`}
            >
              ADD TO CART - Rs 5,500
