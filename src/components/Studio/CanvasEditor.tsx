@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useCartStore } from '@/store/cart';
 import AIPreviewModal from './AIPreviewModal';
+import { createBrowserClient } from '@supabase/ssr';
 
 // Next.js dynamic import (ssr: false) is CRITICAL to prevent 'window is not defined'
 // hydration crashes from the react-konva / konva module which rely on canvas/DOM.
@@ -47,6 +48,16 @@ export default function CanvasEditor() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiImageUrl, setAiImageUrl] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+
+  // Wardrobe / Toast State
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  // Supabase browser client for wardrobe saves
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
@@ -113,6 +124,44 @@ export default function CanvasEditor() {
     });
 
     openCart();
+  };
+
+  const handleSaveDesign = async () => {
+    if (!stageRef.current) return;
+
+    // Check auth
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSaveMessage('Please sign in to save designs to your Wardrobe.');
+      setSaveStatus('error');
+      setTimeout(() => { setSaveStatus('idle'); setSaveMessage(null); }, 4000);
+      // Redirect to login after brief delay
+      setTimeout(() => window.location.href = '/login', 1500);
+      return;
+    }
+
+    setSaveStatus('saving');
+
+    const snapshot = stageRef.current.toDataURL({ mimeType: 'image/jpeg', quality: 0.6, pixelRatio: 0.5 });
+    const colorSwatch = SWATCHES.find(s => s.hex === shirtColor);
+
+    const { error } = await supabase.from('saved_designs').insert({
+      user_id:        user.id,
+      user_email:     user.email,
+      image_snapshot: snapshot,
+      size:           selectedSize,
+      color_label:    colorSwatch?.label ?? null,
+      color_hex:      shirtColor,
+    });
+
+    if (error) {
+      setSaveMessage('Failed to save design. Please try again.');
+      setSaveStatus('error');
+    } else {
+      setSaveMessage('Design saved to your Wardrobe! ✓');
+      setSaveStatus('saved');
+    }
+    setTimeout(() => { setSaveStatus('idle'); setSaveMessage(null); }, 3500);
   };
 
   const handleGeneratePreview = async () => {
@@ -264,8 +313,18 @@ export default function CanvasEditor() {
         </div>
 
         <div className="mt-auto pt-8 border-t border-zinc-800/50 flex flex-col gap-4">
-           {/* Secondary Button: AI Preview */}
-           <button 
+
+           {/* Toast message */}
+           {saveMessage && (
+             <p className={`text-xs text-center font-medium px-3 py-2 rounded-lg ${
+               saveStatus === 'saved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+             }`}>
+               {saveMessage}
+             </p>
+           )}
+
+           {/* Secondary: AI Preview */}
+           <button
              onClick={handleGeneratePreview}
              disabled={!uploadedLogo}
              className={`w-full py-3.5 uppercase tracking-[0.15em] text-xs font-bold transition-all duration-300 rounded-lg flex items-center justify-center gap-2 ${
@@ -277,13 +336,36 @@ export default function CanvasEditor() {
              <span>✨ Generate AI Preview</span>
            </button>
 
-           {/* Primary Button: Add to Cart */}
-           <button 
+           {/* Ghost: Save to Wardrobe */}
+           <button
+             onClick={handleSaveDesign}
+             disabled={!uploadedLogo || saveStatus === 'saving'}
+             className={`w-full py-3 uppercase tracking-[0.15em] text-xs font-bold transition-all duration-300 rounded-lg flex items-center justify-center gap-2 border ${
+               uploadedLogo && saveStatus !== 'saving'
+                 ? 'border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500'
+                 : 'border-zinc-800/50 text-zinc-700 cursor-not-allowed'
+             }`}
+           >
+             {saveStatus === 'saving' ? (
+               <>
+                 <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                 </svg>
+                 Saving...
+               </>
+             ) : (
+               <><span>🗂</span> Save to Wardrobe</>
+             )}
+           </button>
+
+           {/* Primary: Add to Cart */}
+           <button
              onClick={handleAddToCart}
              disabled={!uploadedLogo || !selectedSize}
              className={`w-full py-4 uppercase tracking-[0.2em] text-sm font-black transition-all duration-300 rounded-lg ${
                uploadedLogo && selectedSize
-                 ? 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02]' 
+                 ? 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02]'
                  : 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
              }`}
            >

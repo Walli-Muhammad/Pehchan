@@ -4,16 +4,38 @@ import { useState, useEffect } from 'react';
 import { useCartStore } from '@/store/cart';
 import { useUIStore } from '@/store/ui';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
+import { createBrowserClient } from '@supabase/ssr';
+import type { User } from '@supabase/supabase-js';
 
 export default function Navbar() {
   const { toggleCart, getTotalItems } = useCartStore();
   const { toggleSearch } = useUIStore();
   const totalItems = getTotalItems();
 
-  // isMounted prevents the Zustand localStorage-derived cart count from
-  // causing a server/client hydration mismatch (server has no localStorage).
   const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => setIsMounted(true), []);
+  const [user, setUser] = useState<User | null>(null);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  useEffect(() => {
+    setIsMounted(true);
+    // Get initial session
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    // Listen for auth state changes (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  };
 
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
@@ -95,6 +117,42 @@ export default function Navbar() {
               <span className="text-[10px] font-bold">K</span>
             </div>
           </button>
+
+          {/* Auth Controls */}
+          {isMounted && (
+            user ? (
+              <>
+                <a
+                  href="/profile"
+                  className={`hidden sm:flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest transition-colors ${
+                    isScrolled ? 'text-zinc-400 hover:text-white' : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Wardrobe
+                </a>
+                <button
+                  onClick={handleSignOut}
+                  className={`hidden sm:block text-xs font-semibold uppercase tracking-widest transition-colors ${
+                    isScrolled ? 'text-zinc-600 hover:text-red-400' : 'text-white/50 hover:text-red-300'
+                  }`}
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <a
+                href="/login"
+                className={`hidden sm:flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest transition-colors ${
+                  isScrolled ? 'text-zinc-400 hover:text-white' : 'text-white/80 hover:text-white'
+                }`}
+              >
+                Sign In
+              </a>
+            )
+          )}
 
           <div className="w-px h-4 bg-white/20 mx-1 hidden sm:block" />
 
