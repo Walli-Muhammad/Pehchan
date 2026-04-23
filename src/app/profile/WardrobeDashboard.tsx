@@ -69,6 +69,14 @@ export default function WardrobeDashboard({ user, savedDesigns, orders }: Props)
     <div className="min-h-screen bg-[#09090b] text-white pt-28 pb-20 px-4 md:px-8">
       <div className="max-w-5xl mx-auto">
 
+        {/* Escape hatch */}
+        <Link href="/" className="text-sm text-zinc-400 hover:text-white transition-colors mb-8 inline-flex items-center gap-1.5">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Store
+        </Link>
+
         {/* Header */}
         <div className="flex items-start justify-between mb-12">
           <div>

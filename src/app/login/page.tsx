@@ -37,7 +37,7 @@ export default function LoginPage() {
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
-        window.location.href = '/profile';
+        window.location.href = '/';
       }
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
@@ -51,7 +51,7 @@ export default function LoginPage() {
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/profile`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/`,
       },
     });
     if (oauthError) setError(oauthError.message);

@@ -5,15 +5,18 @@ import { useCartStore } from '@/store/cart';
 import { useUIStore } from '@/store/ui';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
 import { createBrowserClient } from '@supabase/ssr';
+import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 
 export default function Navbar() {
   const { toggleCart, getTotalItems } = useCartStore();
   const { toggleSearch } = useUIStore();
   const totalItems = getTotalItems();
+  const router = useRouter();
 
   const [isMounted, setIsMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [wardrobeToast, setWardrobeToast] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -118,10 +121,11 @@ export default function Navbar() {
             </div>
           </button>
 
-          {/* Auth Controls */}
+          {/* Auth Controls — Wardrobe always visible, Sign Out auth-only */}
           {isMounted && (
-            user ? (
-              <>
+            <>
+              {user ? (
+                // Logged-in: direct link
                 <a
                   href="/profile"
                   className={`hidden sm:flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest transition-colors ${
@@ -133,6 +137,39 @@ export default function Navbar() {
                   </svg>
                   Wardrobe
                 </a>
+              ) : (
+                // Guest: toast + redirect to login
+                <div className="relative hidden sm:block">
+                  <button
+                    onClick={() => {
+                      setWardrobeToast(true);
+                      setTimeout(() => setWardrobeToast(false), 2500);
+                      setTimeout(() => router.push('/login'), 800);
+                    }}
+                    className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest transition-colors ${
+                      isScrolled ? 'text-zinc-400 hover:text-white' : 'text-white/80 hover:text-white'
+                    }`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Wardrobe
+                  </button>
+                  {wardrobeToast && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute top-8 right-0 whitespace-nowrap bg-zinc-900 border border-zinc-700 text-zinc-300 text-[11px] px-3 py-1.5 rounded-lg shadow-xl z-50"
+                    >
+                      Please sign in to access your Wardrobe
+                    </motion.div>
+                  )}
+                </div>
+              )}
+
+              {/* Sign Out — auth-only */}
+              {user && (
                 <button
                   onClick={handleSignOut}
                   className={`hidden sm:block text-xs font-semibold uppercase tracking-widest transition-colors ${
@@ -141,17 +178,8 @@ export default function Navbar() {
                 >
                   Sign Out
                 </button>
-              </>
-            ) : (
-              <a
-                href="/login"
-                className={`hidden sm:flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest transition-colors ${
-                  isScrolled ? 'text-zinc-400 hover:text-white' : 'text-white/80 hover:text-white'
-                }`}
-              >
-                Sign In
-              </a>
-            )
+              )}
+            </>
           )}
 
           <div className="w-px h-4 bg-white/20 mx-1 hidden sm:block" />
