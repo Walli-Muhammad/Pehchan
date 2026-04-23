@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar/Navbar';
 import CartDrawer from '@/components/Cart/CartDrawer';
 import CheckoutModal from '@/components/Checkout/CheckoutModal';
 import SearchModal from '@/components/Search/SearchModal';
+import Footer from '@/components/Footer/Footer';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -36,6 +37,7 @@ export default function RootLayout({
         <SmoothScrollProvider>
           {children}
         </SmoothScrollProvider>
+        <Footer />
       </body>
     </html>
   );
