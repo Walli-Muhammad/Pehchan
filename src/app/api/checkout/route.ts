@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
     // Safepay checkout URL
     const checkoutUrl =
       `https://sandbox.api.getsafepay.com/checkout/pay` +
-      `?environment=sandbox` +
+      `?env=sandbox` +
       `&tracker=${tracker}` +
       `&client=${safepayApiKey}` +
       `&source=custom` +
