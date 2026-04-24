@@ -28,17 +28,23 @@ const POD_PRICE_PKR = 5500;
 
 // =============================================
 // POST /api/checkout
-// 1. Verify products + calculate server-side total
-// 2. Encode cart state into a short-lived signed cookie
-// 3. Create a Safepay tracker
-// 4. Return the Safepay hosted checkout URL
+//
+// Architecture (Database-First):
+// 1. Verify products & calculate server-side total
+// 2. Generate Safepay tracker
+// 3. INSERT order into Supabase with status='pending'
+//    and gateway_txn_ref=tracker  ← key for confirm-order lookup
+// 4. INSERT order_items
+// 5. Return checkoutUrl to the client
+//
+// No cookie is used. The DB row is the source of truth.
 // =============================================
 export async function POST(req: NextRequest) {
   try {
     const body: CheckoutRequest = await req.json();
     const { items, shipping } = body;
 
-    // — Validation —
+    // ── Validation ────────────────────────────────────────────────────────────
     if (!items?.length) {
       return NextResponse.json({ error: 'Cart is empty.' }, { status: 400 });
     }
@@ -46,13 +52,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required shipping details.' }, { status: 400 });
     }
 
-    // =============================================
-    // SECURITY: Re-fetch product prices server-side
-    // =============================================
+    // ── Server-side price verification ────────────────────────────────────────
     const regularItems   = items.filter((i) => !i.productId.startsWith('custom-'));
     const customPodItems = items.filter((i) =>  i.productId.startsWith('custom-'));
 
-    let productMap = new Map<string, { title: string; base_price: number; image_url: string | null; is_pod: boolean; is_active: boolean }>();
+    let productMap = new Map<string, {
+      title: string; base_price: number; image_url: string | null;
+      is_pod: boolean; is_active: boolean;
+    }>();
 
     if (regularItems.length > 0) {
       const productIds = [...new Set(regularItems.map((i) => i.productId))];
@@ -74,9 +81,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // =============================================
-    // POD sentinel product (for FK constraint)
-    // =============================================
+    // ── POD sentinel row ──────────────────────────────────────────────────────
     let podProductId: string | null = null;
     if (customPodItems.length > 0) {
       const { data: existing } = await supabaseAdmin
@@ -105,11 +110,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // =============================================
-    // Server-verified totals
-    // =============================================
+    // ── Build verified line items & calculate total ───────────────────────────
     let subtotal = 0;
-
     const verifiedItems = [
       ...regularItems.map((item) => {
         const product = productMap.get(item.productId)!;
@@ -132,10 +134,10 @@ export async function POST(req: NextRequest) {
           product_id:        podProductId!,
           variant_id:        'custom-pod',
           product_title:     'Custom Pehchan Tee (POD)',
-          product_image_url: null,
+          product_image_url: null as string | null,
           quantity:          item.quantity,
           unit_price_pkr:    POD_PRICE_PKR,
-          pod_customization: { ...(item.podCustomizations ?? {}), _custom_pod_ref: item.productId },
+          pod_customization: { ...(item.podCustomizations ?? {}), _custom_pod_ref: item.productId } as Record<string, unknown>,
           is_pod:            true,
         };
       }),
@@ -143,9 +145,7 @@ export async function POST(req: NextRequest) {
 
     const totalAmount = subtotal + SHIPPING_PKR;
 
-    // =============================================
-    // Safepay: Create Tracker
-    // =============================================
+    // ── Generate Safepay tracker ──────────────────────────────────────────────
     const safepayApiKey = process.env.SAFEPAY_API_KEY!;
     const siteUrl       = process.env.NEXT_PUBLIC_SITE_URL!;
 
@@ -166,14 +166,9 @@ export async function POST(req: NextRequest) {
       const safepayData = await safepayRes.json();
       console.log('[checkout] SAFEPAY INIT RESPONSE:', JSON.stringify(safepayData, null, 2));
 
-      if (!safepayRes.ok) {
-        console.error('[checkout] Safepay init HTTP error:', safepayRes.status, safepayData);
+      if (!safepayRes.ok || !safepayData?.data?.token) {
+        console.error('[checkout] Safepay tracker generation failed:', safepayData);
         return NextResponse.json({ error: 'Payment gateway error. Please try again.' }, { status: 502 });
-      }
-
-      if (!safepayData?.data?.token) {
-        console.error('[checkout] Safepay tracker generation failed — no token in response:', safepayData);
-        return NextResponse.json({ error: 'Could not initiate payment session.' }, { status: 502 });
       }
 
       tracker = safepayData.data.token;
@@ -183,21 +178,51 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Could not reach payment gateway.' }, { status: 502 });
     }
 
-    // =============================================
-    // Persist pending order state in an HttpOnly cookie
-    // The success page will read this to write the DB row
-    // =============================================
-    const pendingOrder = {
-      tracker,
-      shipping,
-      verifiedItems,
-      subtotal,
-      totalAmount,
-      shippingPkr: SHIPPING_PKR,
-      createdAt: Date.now(),
-    };
+    // ── DATABASE-FIRST: Insert order immediately with status='pending' ─────────
+    // This removes the need for any cookie — the row is the source of truth.
+    console.log('[checkout] Inserting pending order into Supabase...');
 
-    // Safepay checkout URL — using Safepay's exact required parameter names
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from('orders')
+      .insert({
+        customer_name:   shipping.customerName,
+        customer_email:  shipping.customerEmail,
+        customer_phone:  shipping.customerPhone,
+        address_line1:   shipping.addressLine1,
+        city:            shipping.city,
+        province:        shipping.province,
+        gateway:         'safepay',
+        gateway_txn_ref: tracker,     // ← used by confirm-order to find this row
+        subtotal_pkr:    subtotal,
+        shipping_pkr:    SHIPPING_PKR,
+        total_pkr:       totalAmount,
+        status:          'pending',   // will be updated to 'payment_received' on success
+      })
+      .select('id')
+      .single();
+
+    if (orderError || !order) {
+      console.error('[checkout] SUPABASE ORDER INSERT ERROR:', orderError);
+      return NextResponse.json({ error: 'Failed to record order. Please try again.' }, { status: 500 });
+    }
+
+    console.log('[checkout] Pending order created — ID:', order.id);
+
+    // Insert order items
+    const { error: itemsError } = await supabaseAdmin
+      .from('order_items')
+      .insert(verifiedItems.map((item) => ({ ...item, order_id: order.id })));
+
+    if (itemsError) {
+      console.error('[checkout] ORDER ITEMS INSERT ERROR:', itemsError);
+      // Roll back the order row so we don't leave orphaned records
+      await supabaseAdmin.from('orders').delete().eq('id', order.id);
+      return NextResponse.json({ error: 'Failed to record order items.' }, { status: 500 });
+    }
+
+    console.log('[checkout] Order items inserted successfully');
+
+    // ── Build Safepay checkout URL ────────────────────────────────────────────
     const checkoutUrl =
       `https://sandbox.api.getsafepay.com/checkout/pay` +
       `?env=sandbox` +
@@ -209,18 +234,7 @@ export async function POST(req: NextRequest) {
 
     console.log('[checkout] Safepay checkout URL:', checkoutUrl);
 
-    // Build response and set cookie
-    const response = NextResponse.json({ success: true, checkoutUrl, tracker });
-
-    response.cookies.set('pehchan_pending_order', JSON.stringify(pendingOrder), {
-      httpOnly: true,
-      secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge:   60 * 30,   // 30 minutes — long enough to complete payment
-      path:     '/',
-    });
-
-    return response;
+    return NextResponse.json({ success: true, checkoutUrl, tracker });
 
   } catch (err) {
     console.error('[checkout] Unhandled error:', err);
