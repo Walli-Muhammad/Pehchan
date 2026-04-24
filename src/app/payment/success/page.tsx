@@ -18,7 +18,8 @@ type PageState = 'confirming' | 'success' | 'error';
 // Inner component uses useSearchParams — must be inside <Suspense>
 function PaymentSuccessContent() {
   const searchParams   = useSearchParams();
-  const tracker        = searchParams.get('tracker') ?? searchParams.get('reference') ?? '';
+  // Safepay appends ?beacon=<token> on redirect_url callbacks
+  const tracker        = searchParams.get('beacon') ?? searchParams.get('tracker') ?? searchParams.get('reference') ?? '';
   const { clearCart }  = useCartStore();
   const [state, setState]   = useState<PageState>('confirming');
   const [order, setOrder]   = useState<ConfirmedOrder | null>(null);

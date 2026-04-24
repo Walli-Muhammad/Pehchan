@@ -163,19 +163,21 @@ export async function POST(req: NextRequest) {
         }),
       });
 
+      const safepayData = await safepayRes.json();
+      console.log('[checkout] SAFEPAY INIT RESPONSE:', JSON.stringify(safepayData, null, 2));
+
       if (!safepayRes.ok) {
-        const errText = await safepayRes.text();
-        console.error('[checkout] Safepay init error:', errText);
+        console.error('[checkout] Safepay init HTTP error:', safepayRes.status, safepayData);
         return NextResponse.json({ error: 'Payment gateway error. Please try again.' }, { status: 502 });
       }
 
-      const safepayData = await safepayRes.json();
-      tracker = safepayData?.data?.token;
-
-      if (!tracker) {
-        console.error('[checkout] Safepay returned no tracker:', safepayData);
+      if (!safepayData?.data?.token) {
+        console.error('[checkout] Safepay tracker generation failed — no token in response:', safepayData);
         return NextResponse.json({ error: 'Could not initiate payment session.' }, { status: 502 });
       }
+
+      tracker = safepayData.data.token;
+      console.log('[checkout] Safepay tracker obtained:', tracker);
     } catch (networkErr) {
       console.error('[checkout] Safepay network error:', networkErr);
       return NextResponse.json({ error: 'Could not reach payment gateway.' }, { status: 502 });
@@ -195,15 +197,17 @@ export async function POST(req: NextRequest) {
       createdAt: Date.now(),
     };
 
-    // Safepay checkout URL
+    // Safepay checkout URL — using Safepay's exact required parameter names
     const checkoutUrl =
       `https://sandbox.api.getsafepay.com/checkout/pay` +
       `?env=sandbox` +
-      `&tracker=${tracker}` +
-      `&client=${safepayApiKey}` +
+      `&beacon=${tracker}` +
       `&source=custom` +
-      `&cancel_url=${siteUrl}/cart` +
-      `&success_url=${siteUrl}/payment/success`;
+      `&client=${safepayApiKey}` +
+      `&cancel_url=${encodeURIComponent(`${siteUrl}/cart`)}` +
+      `&redirect_url=${encodeURIComponent(`${siteUrl}/payment/success`)}`;
+
+    console.log('[checkout] Safepay checkout URL:', checkoutUrl);
 
     // Build response and set cookie
     const response = NextResponse.json({ success: true, checkoutUrl, tracker });
