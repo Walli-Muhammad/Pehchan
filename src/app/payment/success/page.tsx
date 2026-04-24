@@ -17,23 +17,49 @@ type PageState = 'confirming' | 'success' | 'error';
 
 // Inner component uses useSearchParams — must be inside <Suspense>
 function PaymentSuccessContent() {
-  const searchParams   = useSearchParams();
+  const searchParams = useSearchParams();
+
   // Safepay appends ?beacon=<token> on redirect_url callbacks
-  const tracker        = searchParams.get('beacon') ?? searchParams.get('tracker') ?? searchParams.get('reference') ?? '';
+  // We keep null (not '') so the !token guard below works correctly
+  const token =
+    searchParams.get('beacon') ??
+    searchParams.get('tracker') ??
+    searchParams.get('reference') ??
+    null;
+
   const { clearCart }  = useCartStore();
   const [state, setState]   = useState<PageState>('confirming');
   const [order, setOrder]   = useState<ConfirmedOrder | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
-  const confirmed = useRef(false); // prevent double-fire in dev StrictMode
+  const confirmed = useRef(false); // prevent double-fire in React 18 StrictMode
+
+  console.log('[success-page] Mounted. Token found:', token);
+  console.log('[success-page] All URL params:', Object.fromEntries(searchParams.entries()));
 
   useEffect(() => {
-    if (!tracker || confirmed.current) return;
+    // If no token at all, show error immediately — nothing to confirm
+    if (!token) {
+      console.error('[success-page] No token in URL — cannot confirm order');
+      setErrorMsg('No payment reference found in the URL. If you completed payment, please contact support.');
+      setState('error');
+      return;
+    }
+
+    if (confirmed.current) {
+      console.log('[success-page] Skipping duplicate confirmation (StrictMode)');
+      return;
+    }
     confirmed.current = true;
 
     async function confirmOrder() {
+      console.log('[success-page] Calling /api/confirm-order with beacon:', token);
       try {
-        const res = await fetch(`/api/confirm-order?tracker=${encodeURIComponent(tracker)}`);
+        // Send as ?beacon= — matches what confirm-order route reads
+        const res = await fetch(`/api/confirm-order?beacon=${encodeURIComponent(token!)}`);
+        console.log('[success-page] /api/confirm-order responded:', res.status);
+
         const data = await res.json();
+        console.log('[success-page] Confirm-order response body:', data);
 
         if (!res.ok || !data.success) {
           setErrorMsg(data.error ?? 'Something went wrong. Your payment may still have been processed — please contact support.');
@@ -44,14 +70,17 @@ function PaymentSuccessContent() {
         clearCart(); // wipe the Zustand cart after successful server write
         setOrder(data.order);
         setState('success');
-      } catch {
-        setErrorMsg('Network error while confirming your order. Please do not pay again — contact support with your tracker.');
+        console.log('[success-page] Order confirmed successfully:', data.order?.id);
+      } catch (err) {
+        console.error('[success-page] Network error during confirmation:', err);
+        setErrorMsg('Network error while confirming your order. Please do not pay again — contact support with your token: ' + token);
         setState('error');
       }
     }
 
     confirmOrder();
-  }, [tracker, clearCart]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   return (
     <div className="min-h-screen bg-[#09090b] flex items-center justify-center px-4 pt-20 pb-20">
@@ -112,10 +141,10 @@ function PaymentSuccessContent() {
                 <span className="text-zinc-500">Status</span>
                 <span className="text-emerald-400 font-semibold capitalize">{order.status.replace('_', ' ')}</span>
               </div>
-              {tracker && (
+              {token && (
                 <div className="flex items-center justify-between border-t border-zinc-800 pt-3">
-                  <span className="text-zinc-500">Safepay Tracker</span>
-                  <span className="text-zinc-500 font-mono text-[11px] truncate max-w-[160px]">{tracker}</span>
+                  <span className="text-zinc-500">Safepay Beacon</span>
+                  <span className="text-zinc-500 font-mono text-[11px] truncate max-w-[160px]">{token}</span>
                 </div>
               )}
             </div>
@@ -160,10 +189,10 @@ function PaymentSuccessContent() {
               <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">{errorMsg}</p>
             </div>
 
-            {tracker && (
+            {token && (
               <div className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-5 py-4 text-left">
                 <p className="text-xs uppercase tracking-widest text-zinc-600 mb-1">Reference for Support</p>
-                <p className="text-zinc-300 font-mono text-xs break-all">{tracker}</p>
+                <p className="text-zinc-300 font-mono text-xs break-all">{token}</p>
               </div>
             )}
 
