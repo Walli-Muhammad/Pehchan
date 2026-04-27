@@ -7,6 +7,7 @@ import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
+import Sidebar from '@/components/Sidebar/Sidebar';
 
 export default function Navbar() {
   const { toggleCart, getTotalItems } = useCartStore();
@@ -17,6 +18,7 @@ export default function Navbar() {
   const [isMounted, setIsMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [wardrobeToast, setWardrobeToast] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -63,7 +65,10 @@ export default function Navbar() {
   });
 
   return (
-    <motion.header
+    <>
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} user={user} />
+      
+      <motion.header
       variants={{
         visible: { y: 0, opacity: 1 },
         hidden: { y: "-150%", opacity: 0 },
@@ -79,15 +84,29 @@ export default function Navbar() {
             : 'w-full max-w-7xl bg-transparent border-transparent'
         }`}
       >
-        {/* Brand */}
-        <a
-          href="/"
-          className={`font-black uppercase tracking-[0.2em] transition-all ${
-            isScrolled ? 'text-sm' : 'text-lg md:text-xl text-white drop-shadow-lg'
-          }`}
-        >
-          Pehchan
-        </a>
+        {/* Left Side: Menu + Brand */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className={`p-1.5 -ml-2 rounded-full transition-colors ${
+              isScrolled ? 'text-zinc-400 hover:text-white hover:bg-white/10' : 'text-white/80 hover:text-white hover:bg-white/10'
+            }`}
+            aria-label="Open menu"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          
+          <a
+            href="/"
+            className={`font-black uppercase tracking-[0.2em] transition-all ${
+              isScrolled ? 'text-sm' : 'text-lg md:text-xl text-white drop-shadow-lg'
+            }`}
+          >
+            Pehchan
+          </a>
+        </div>
 
         {/* Center Links */}
         <div className="hidden sm:flex items-center gap-6">
@@ -217,5 +236,6 @@ export default function Navbar() {
         </div>
       </div>
     </motion.header>
+    </>
   );
 }
