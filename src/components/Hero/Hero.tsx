@@ -94,9 +94,8 @@ export default function Hero() {
   }, []);
 
   return (
-    <>
-      <section
-        ref={sectionRef}
+    <section
+      ref={sectionRef}
         // No opacity-0 class here — GSAP's gsap.set() handles the initial invisible state.
         // If GSAP ever fails to fire, elements stay fully visible (safe fallback).
         className="relative flex h-screen w-full items-center justify-center overflow-hidden bg-black"
