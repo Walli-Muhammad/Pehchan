@@ -61,7 +61,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-white font-bold text-lg mb-3">8. Contact</h2>
-            <p className="text-zinc-400">Legal queries: <a href="mailto:legal@pehchan.pk" className="text-indigo-400 hover:underline">legal@pehchan.pk</a></p>
+            <p className="text-zinc-400">Legal queries: <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a></p>
           </section>
 
         </div>

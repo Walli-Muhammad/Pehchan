@@ -104,7 +104,7 @@ function SuccessContent() {
             </div>
           )}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <a href="mailto:hello@pehchan.pk"
+            <a href="mailto:Pehchan.help@gmail.com"
               className="flex-1 py-3.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 font-semibold text-sm rounded-full text-center transition-all">
               Contact Support
             </a>

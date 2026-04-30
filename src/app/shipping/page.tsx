@@ -59,7 +59,7 @@ export default function ShippingPage() {
               <li>Orders are processed on business days (Monday–Saturday, excluding public holidays).</li>
               <li>Pehchan is not responsible for delays caused by the courier or natural events beyond our control.</li>
               <li>Ensure your shipping address is accurate at checkout — we cannot reroute packages once dispatched.</li>
-              <li>For international shipping inquiries, email <a href="mailto:shipping@pehchan.pk" className="text-indigo-400 hover:underline">shipping@pehchan.pk</a>.</li>
+              <li>For international shipping inquiries, email <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a>.</li>
             </ul>
           </section>
 

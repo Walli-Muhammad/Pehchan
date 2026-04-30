@@ -25,10 +25,10 @@ export default function ContactPage() {
             <div className="flex flex-col gap-5">
               {[
                 { icon: '📍', label: 'Address', value: 'Plot 12-B, DHA Phase 6, Lahore, Pakistan' },
-                { icon: '📞', label: 'Phone', value: '+92 300 123 4567', href: 'tel:+923001234567' },
-                { icon: '✉️', label: 'General', value: 'hello@pehchan.pk', href: 'mailto:hello@pehchan.pk' },
-                { icon: '↩️', label: 'Returns', value: 'returns@pehchan.pk', href: 'mailto:returns@pehchan.pk' },
-                { icon: '🔒', label: 'Privacy', value: 'privacy@pehchan.pk', href: 'mailto:privacy@pehchan.pk' },
+                { icon: '💬', label: 'WhatsApp', value: '+92 329 188 1033', href: 'https://wa.me/923291881033' },
+                { icon: '✉️', label: 'General', value: 'Pehchan.help@gmail.com', href: 'mailto:Pehchan.help@gmail.com' },
+                { icon: '↩️', label: 'Returns', value: 'Pehchan.help@gmail.com', href: 'mailto:Pehchan.help@gmail.com' },
+                { icon: '🔒', label: 'Privacy', value: 'Pehchan.help@gmail.com', href: 'mailto:Pehchan.help@gmail.com' },
                 { icon: '🕒', label: 'Hours', value: 'Mon–Sat, 10:00am – 7:00pm PKT' },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-4">

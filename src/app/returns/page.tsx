@@ -25,7 +25,7 @@ export default function ReturnsPage() {
           <section>
             <h2 className="text-white font-bold text-lg mb-3">How to Request a Return</h2>
             <ol className="list-decimal pl-5 space-y-2 text-zinc-400">
-              <li>Email <a href="mailto:returns@pehchan.pk" className="text-indigo-400 hover:underline">returns@pehchan.pk</a> within 7 days of receiving your order.</li>
+              <li>Email <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a> within 7 days of receiving your order.</li>
               <li>Include your order number, description of the issue, and clear photos.</li>
               <li>Our team will review within 2 business days and respond with next steps.</li>
               <li>If approved, we will provide a return label or arrange a courier pickup.</li>

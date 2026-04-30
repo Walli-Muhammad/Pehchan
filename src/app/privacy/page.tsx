@@ -17,7 +17,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-white font-bold text-lg mb-3">1. Who We Are</h2>
-            <p>Pehchan (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is a print-on-demand clothing brand based in Lahore, Pakistan. Our registered address is Plot 12-B, DHA Phase 6, Lahore. You can reach our privacy team at <a href="mailto:privacy@pehchan.pk" className="text-indigo-400 hover:underline">privacy@pehchan.pk</a>.</p>
+            <p>Pehchan (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is a print-on-demand clothing brand based in Lahore, Pakistan. Our registered address is Plot 12-B, DHA Phase 6, Lahore. You can reach our privacy team at <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a>.</p>
           </section>
 
           <section>
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-white font-bold text-lg mb-3">6. Your Rights</h2>
-            <p className="text-zinc-400">You may request access to, correction of, or deletion of your personal data at any time by emailing <a href="mailto:privacy@pehchan.pk" className="text-indigo-400 hover:underline">privacy@pehchan.pk</a>. We will respond within 30 days.</p>
+            <p className="text-zinc-400">You may request access to, correction of, or deletion of your personal data at any time by emailing <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a>. We will respond within 30 days.</p>
           </section>
 
           <section>
@@ -69,7 +69,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-white font-bold text-lg mb-3">9. Contact</h2>
-            <p className="text-zinc-400">For any privacy-related questions: <a href="mailto:privacy@pehchan.pk" className="text-indigo-400 hover:underline">privacy@pehchan.pk</a> | +92 300 123 4567</p>
+            <p className="text-zinc-400">For any privacy-related questions: <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a> | +92 329 188 1033</p>
           </section>
 
         </div>
