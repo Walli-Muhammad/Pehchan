@@ -5,19 +5,17 @@ import Image from 'next/image';
 import { CldUploadWidget } from 'next-cloudinary';
 import { createProduct, type CreateProductResult } from '@/actions/admin';
 
-const CATEGORIES = ['Heavyweight', 'Graphic Tees', 'Outerwear', 'Bottoms', 'Accessories'];
-
 const EMPTY_FORM = {
   title: '',
   base_price: '',
   category: '',
   description: '',
   is_pod: false,
-  image_url: null as string | null,
 };
 
-export default function NewProductForm() {
+export default function NewProductForm({ categories = [] }: { categories: { name: string }[] }) {
   const [form, setForm] = useState(EMPTY_FORM);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [result, setResult] = useState<CreateProductResult | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -35,18 +33,22 @@ export default function NewProductForm() {
         category:    form.category,
         description: form.description,
         is_pod:      form.is_pod,
-        image_url:   form.image_url,
+        image_urls:  imageUrls,
       });
 
       setResult(res);
       if (res.success) {
-        setForm(EMPTY_FORM); // clear form for next product
+        setForm(EMPTY_FORM);
+        setImageUrls([]);
       }
     });
   };
 
   const field = (key: keyof typeof EMPTY_FORM, value: string | boolean) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  const removeImage = (idx: number) =>
+    setImageUrls((prev) => prev.filter((_, i) => i !== idx));
 
   return (
     <div className="max-w-2xl">
@@ -125,8 +127,8 @@ export default function NewProductForm() {
               className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors appearance-none"
             >
               <option value="" disabled>Select category...</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+              {categories.map((c) => (
+                <option key={c.name} value={c.name}>{c.name}</option>
               ))}
             </select>
           </div>
@@ -146,77 +148,89 @@ export default function NewProductForm() {
           />
         </div>
 
-        {/* Image Upload */}
+        {/* ── Multi-Image Upload ───────────────────────────────────────── */}
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-2">
-            Product Image
+            Product Images
+            <span className="ml-2 text-xs text-zinc-500 font-normal">
+              ({imageUrls.length} uploaded — first image is the main display photo)
+            </span>
           </label>
 
-          <div className="flex items-start gap-4">
-            {/* Image Preview */}
-            {form.image_url ? (
-              <div className="relative group w-24 h-24">
-                <Image
-                  src={form.image_url}
-                  alt="Product preview"
-                  fill
-                  className="object-cover rounded-xl border border-zinc-700"
-                />
-                <button
-                  type="button"
-                  onClick={() => field('image_url', '')}
-                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <div className="w-24 h-24 rounded-xl border-2 border-dashed border-zinc-700 flex items-center justify-center text-zinc-600">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-            )}
-
-            {/* Upload Widget Trigger */}
-            <CldUploadWidget
-              uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-              options={{
-                maxFiles: 1,
-                resourceType: 'image',
-                cropping: false,
-                sources: ['local', 'url', 'camera'],
-              }}
-              onSuccess={(result) => {
-                const info = result.info as { secure_url: string };
-                if (info?.secure_url) {
-                  setForm((f) => ({ ...f, image_url: info.secure_url }));
-                }
-              }}
-            >
-              {({ open }) => (
-                <button
-                  type="button"
-                  onClick={() => open()}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 hover:border-indigo-500 hover:text-white transition-colors text-sm font-medium"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  {form.image_url ? 'Change Image' : 'Upload Image'}
-                </button>
-              )}
-            </CldUploadWidget>
-          </div>
-
-          {form.image_url && (
-            <p className="mt-2 text-xs text-zinc-500 truncate max-w-sm">
-              ✓ {form.image_url}
-            </p>
+          {/* Image grid */}
+          {imageUrls.length > 0 && (
+            <div className="grid grid-cols-4 gap-3 mb-3">
+              {imageUrls.map((url, idx) => (
+                <div key={url} className="relative group aspect-square">
+                  <Image
+                    src={url}
+                    alt={`Product image ${idx + 1}`}
+                    fill
+                    className="object-cover rounded-xl border border-zinc-700"
+                  />
+                  {/* Primary badge */}
+                  {idx === 0 && (
+                    <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-indigo-600 text-white px-1.5 py-0.5 rounded">
+                      MAIN
+                    </span>
+                  )}
+                  {/* Remove button */}
+                  <button
+                    type="button"
+                    onClick={() => removeImage(idx)}
+                    className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  {/* Make primary button (for non-first images) */}
+                  {idx !== 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setImageUrls((prev) => [prev[idx], ...prev.filter((_, i) => i !== idx)])}
+                      className="absolute bottom-1 left-1 text-[9px] font-bold bg-zinc-800/90 text-zinc-300 hover:bg-indigo-600 hover:text-white px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      SET MAIN
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
+
+          {/* Upload button */}
+          <CldUploadWidget
+            uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+            options={{
+              maxFiles: 10,
+              resourceType: 'image',
+              cropping: false,
+              sources: ['local', 'url', 'camera'],
+              multiple: true,
+            }}
+            onSuccess={(result) => {
+              const info = result.info as { secure_url: string };
+              if (info?.secure_url) {
+                setImageUrls((prev) => [...prev, info.secure_url]);
+              }
+            }}
+          >
+            {({ open }) => (
+              <button
+                type="button"
+                onClick={() => open()}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-zinc-600 text-zinc-400 hover:border-indigo-500 hover:text-white transition-colors text-sm font-medium w-full justify-center"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                {imageUrls.length === 0 ? 'Upload Images' : 'Add More Images'}
+              </button>
+            )}
+          </CldUploadWidget>
         </div>
+        {/* ────────────────────────────────────────────────────────────── */}
 
         {/* POD Toggle */}
         <div className="flex items-center gap-3 p-5 rounded-xl bg-zinc-900 border border-zinc-800">
@@ -265,7 +279,7 @@ export default function NewProductForm() {
           </button>
           <button
             type="button"
-            onClick={() => { setForm(EMPTY_FORM); setResult(null); }}
+            onClick={() => { setForm(EMPTY_FORM); setImageUrls([]); setResult(null); }}
             className="px-4 py-3 rounded-xl text-zinc-400 hover:text-white transition-colors text-sm"
           >
             Reset

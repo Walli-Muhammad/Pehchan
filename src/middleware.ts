@@ -1,14 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-// ─── RBAC Allowlist ──────────────────────────────────────────────────────────
-// Only users whose email is in this list can access /admin routes.
-// Add additional admin emails here as needed.
-const ADMIN_EMAILS: string[] = ['walim204@gmail.com'];
+// ─── RBAC ────────────────────────────────────────────────────────────────────
+// Admin access is controlled by the `admin_users` table in Supabase.
+// Run supabase/setup_admin.sql to create the table and seed your email.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function middleware(request: NextRequest) {
-  // Mutable response so @supabase/ssr can write refreshed auth cookies.
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -41,19 +39,27 @@ export async function middleware(request: NextRequest) {
   const isAdminRoute = pathname.startsWith('/admin') && pathname !== '/admin/login';
   const isLoginPage  = pathname === '/admin/login';
 
-  const userEmail    = user?.email ?? null;
-  const isAuthorized = userEmail !== null && ADMIN_EMAILS.includes(userEmail);
+  const userEmail = user?.email ?? null;
+
+  // Check admin_users table in DB (single source of truth, easy to update without redeploy)
+  let isAuthorized = false;
+  if (userEmail) {
+    const { data } = await supabase
+      .from('admin_users')
+      .select('email')
+      .eq('email', userEmail)
+      .maybeSingle();
+    isAuthorized = !!data;
+  }
 
   if (isAdminRoute) {
     if (!user) {
-      // Not logged in → send to login page
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/admin/login';
       return NextResponse.redirect(loginUrl);
     }
 
     if (!isAuthorized) {
-      // Logged in but NOT in the allowlist → kick to storefront
       const homeUrl = request.nextUrl.clone();
       homeUrl.pathname = '/';
       return NextResponse.redirect(homeUrl);
@@ -62,15 +68,11 @@ export async function middleware(request: NextRequest) {
 
   if (isLoginPage && user) {
     if (isAuthorized) {
-      // Already authorized → skip login and go straight to dashboard
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = '/admin';
       return NextResponse.redirect(dashboardUrl);
-    } else {
-      // Logged in but unauthorized → let them see the login page
-      // (they will be kicked once they try to navigate to /admin)
-      return supabaseResponse;
     }
+    return supabaseResponse;
   }
 
   return supabaseResponse;

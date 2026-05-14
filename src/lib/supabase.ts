@@ -74,6 +74,36 @@ export async function getProducts(): Promise<Product[]> {
   return data ?? [];
 }
 
+/** Fetch all active products for a specific category by its slug */
+export async function getProductsByCategorySlug(slug: string): Promise<{ products: Product[], categoryName: string | null }> {
+  // First, find the category name from the slug
+  const { data: categoryData, error: categoryError } = await supabase
+    .from('categories')
+    .select('name')
+    .eq('slug', slug)
+    .single();
+
+  if (categoryError || !categoryData) {
+    console.error('[getProductsByCategorySlug] Category not found:', slug);
+    return { products: [], categoryName: null };
+  }
+
+  // Then fetch products matching that category name
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .eq('category', categoryData.name)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('[getProductsByCategorySlug] Supabase error:', error.message);
+    return { products: [], categoryName: categoryData.name };
+  }
+  
+  return { products: data ?? [], categoryName: categoryData.name };
+}
+
 /** Fetch a single product with all its variants and POD options */
 export async function getProductById(id: string): Promise<{
   product: Product | null;

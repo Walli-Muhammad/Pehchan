@@ -1,9 +1,11 @@
 'use client';
+import { useState, useEffect } from 'react';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { X } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
+import { getCategories, type Category } from '@/actions/admin';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -11,15 +13,17 @@ interface SidebarProps {
   user: User | null;
 }
 
-const CATEGORIES = [
-  { name: 'Anime', href: '/category/anime' },
-  { name: 'Sports', href: '/category/sports' },
-  { name: 'Originals', href: '/category/originals' },
-  { name: 'Hot Drops', href: '/category/hot-drops' },
-  { name: 'Accessories', href: '/category/accessories' },
-];
-
 export default function Sidebar({ isOpen, onClose, user }: SidebarProps) {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    getCategories().then((data) => {
+      if (mounted) setCategories(data);
+    });
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -85,10 +89,10 @@ export default function Sidebar({ isOpen, onClose, user }: SidebarProps) {
                 Shop by Category
               </p>
               <div className="flex flex-col">
-                {CATEGORIES.map((category) => (
+                {categories.map((category) => (
                   <Link
-                    key={category.name}
-                    href={category.href}
+                    key={category.id}
+                    href={`/category/${category.slug}`}
                     onClick={onClose}
                     className="px-4 py-3 text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900 hover:translate-x-1 transition-all rounded-xl"
                   >
