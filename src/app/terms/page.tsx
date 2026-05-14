@@ -11,7 +11,7 @@ export default function TermsPage() {
       <div className="max-w-3xl mx-auto">
         <p className="text-xs uppercase tracking-[0.2em] text-indigo-400 mb-3">Legal</p>
         <h1 className="text-4xl font-black text-white mb-2">Terms &amp; Conditions</h1>
-        <p className="text-zinc-500 text-sm mb-12">Last updated: April 23, 2025</p>
+        <p className="text-zinc-500 text-sm mb-12">Last updated: May 14, 2025</p>
 
         <div className="space-y-10 text-sm leading-7">
 
@@ -23,7 +23,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-white font-bold text-lg mb-3">2. Products &amp; Print-on-Demand</h2>
             <ul className="list-disc pl-5 space-y-2 text-zinc-400">
-              <li>All products are made to order. Production begins immediately after payment confirmation.</li>
+              <li>All products are made to order. Production begins after order confirmation.</li>
               <li>Custom-designed (POD) items are <strong className="text-zinc-200">non-refundable</strong> unless there is a manufacturing defect.</li>
               <li>Pehchan reserves the right to refuse any design that is offensive, violates copyright, or breaches Pakistani law.</li>
               <li>Color representation may vary slightly from screen to print due to monitor calibration.</li>
@@ -32,14 +32,25 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-white font-bold text-lg mb-3">3. Pricing &amp; Payments</h2>
-            <p className="text-zinc-400">All prices are listed in Pakistani Rupees (PKR). We accept JazzCash, EasyPaisa, and XPay. Prices include applicable taxes unless stated otherwise. Pehchan reserves the right to update pricing without prior notice.</p>
+            <p className="text-zinc-400">
+              All prices are listed in Pakistani Rupees (PKR). We currently accept the following payment methods:
+            </p>
+            <ul className="list-disc pl-5 space-y-2 text-zinc-400 mt-3">
+              <li><strong className="text-zinc-200">Cash on Delivery (COD):</strong> Pay the rider when your order arrives. COD orders are confirmed by our team via WhatsApp before dispatch. Pehchan reserves the right to cancel COD orders that cannot be verified.</li>
+              <li><strong className="text-zinc-200">JazzCash / EasyPaisa (via WhatsApp):</strong> After placing your order, WhatsApp will open with your order details. We will send you a payment request to your registered phone number. Your order enters production only after payment is confirmed by Pehchan.</li>
+            </ul>
+            <p className="text-zinc-400 mt-3">
+              Prices include applicable taxes unless stated otherwise. Pehchan reserves the right to update pricing without prior notice.
+            </p>
           </section>
 
           <section>
             <h2 className="text-white font-bold text-lg mb-3">4. Order Processing</h2>
             <ul className="list-disc pl-5 space-y-2 text-zinc-400">
-              <li>Standard production time is 3–5 business days after payment verification.</li>
+              <li>Standard production time is 3–5 business days after order confirmation.</li>
               <li>Delivery within Pakistan takes an additional 2–4 business days.</li>
+              <li>COD orders are confirmed before dispatch via WhatsApp. If we are unable to reach you, the order may be held.</li>
+              <li>WhatsApp/JazzCash/EasyPaisa orders are confirmed once payment is received and verified by Pehchan.</li>
               <li>Orders are confirmed via email. If you do not receive a confirmation within 24 hours, contact us.</li>
             </ul>
           </section>
@@ -61,7 +72,11 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-white font-bold text-lg mb-3">8. Contact</h2>
-            <p className="text-zinc-400">Legal queries: <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a></p>
+            <p className="text-zinc-400">
+              Legal queries:{' '}
+              <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a>{' '}
+              or WhatsApp <a href="https://wa.me/923291881033" className="text-indigo-400 hover:underline">+92 329 188 1033</a>
+            </p>
           </section>
 
         </div>

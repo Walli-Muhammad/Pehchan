@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, Tags, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Tags, ClipboardList, LogOut } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 
 export default function AdminSidebar() {
@@ -14,6 +14,7 @@ export default function AdminSidebar() {
 
   const links = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/orders', label: 'Orders', icon: ClipboardList },
     { href: '/admin/products', label: 'Products', icon: ShoppingBag },
     { href: '/admin/categories', label: 'Categories', icon: Tags },
   ];

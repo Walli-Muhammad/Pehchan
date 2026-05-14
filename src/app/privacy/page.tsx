@@ -11,23 +11,23 @@ export default function PrivacyPage() {
       <div className="max-w-3xl mx-auto">
         <p className="text-xs uppercase tracking-[0.2em] text-indigo-400 mb-3">Legal</p>
         <h1 className="text-4xl font-black text-white mb-2">Privacy Policy</h1>
-        <p className="text-zinc-500 text-sm mb-12">Last updated: April 23, 2025</p>
+        <p className="text-zinc-500 text-sm mb-12">Last updated: May 14, 2025</p>
 
         <div className="prose prose-invert prose-zinc max-w-none space-y-10 text-sm leading-7">
 
           <section>
             <h2 className="text-white font-bold text-lg mb-3">1. Who We Are</h2>
-            <p>Pehchan (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is a print-on-demand clothing brand based in Lahore, Pakistan. Our registered address is Plot 12-B, DHA Phase 6, Lahore. You can reach our privacy team at <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a>.</p>
+            <p>Pehchan (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is a print-on-demand clothing brand based in Lahore, Pakistan. You can reach our privacy team at <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a>.</p>
           </section>
 
           <section>
             <h2 className="text-white font-bold text-lg mb-3">2. Information We Collect</h2>
             <ul className="list-disc pl-5 space-y-2 text-zinc-400">
               <li><strong className="text-zinc-200">Account Data:</strong> Your name, email address, and hashed password when you create a Wardrobe account.</li>
-              <li><strong className="text-zinc-200">Order Data:</strong> Billing name, shipping address, phone number, and payment reference (we never store card details — payments are handled by JazzCash / EasyPaisa / XPay).</li>
+              <li><strong className="text-zinc-200">Order Data:</strong> Billing name, shipping address, phone number, and order reference. For Cash on Delivery orders, no payment credentials are collected. For JazzCash/EasyPaisa payments processed via WhatsApp, we record the phone number you provided but do not store mobile wallet credentials or PINs.</li>
               <li><strong className="text-zinc-200">Design Data:</strong> Canvas snapshots you choose to save to your Wardrobe.</li>
               <li><strong className="text-zinc-200">Usage Data:</strong> Pages visited, browser type, device, and IP address via server logs and optional analytics.</li>
-              <li><strong className="text-zinc-200">Cookies:</strong> Session tokens and optional preference cookies. See our Cookie Policy for details.</li>
+              <li><strong className="text-zinc-200">Cookies:</strong> Session tokens and optional preference cookies.</li>
             </ul>
           </section>
 
@@ -35,6 +35,8 @@ export default function PrivacyPage() {
             <h2 className="text-white font-bold text-lg mb-3">3. How We Use Your Information</h2>
             <ul className="list-disc pl-5 space-y-2 text-zinc-400">
               <li>To process and fulfill your orders and send shipping updates.</li>
+              <li>To confirm Cash on Delivery orders via WhatsApp before dispatch.</li>
+              <li>To send JazzCash/EasyPaisa payment requests via WhatsApp for online orders.</li>
               <li>To maintain and secure your account.</li>
               <li>To personalize your experience and remember saved designs.</li>
               <li>To send marketing emails if you have opted in (unsubscribe any time).</li>
@@ -44,7 +46,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-white font-bold text-lg mb-3">4. Data Sharing</h2>
-            <p className="text-zinc-400">We do not sell your personal data. We share it only with trusted service providers strictly for operating our platform: Supabase (database), Cloudinary (image storage), and payment gateways (JazzCash, EasyPaisa, XPay). All providers are contractually bound to data confidentiality.</p>
+            <p className="text-zinc-400">We do not sell your personal data. We share it only with trusted service providers strictly for operating our platform: Supabase (database), Cloudinary (image storage), and Resend (transactional email). Payment transactions via JazzCash and EasyPaisa are initiated through WhatsApp and governed by those services&apos; own privacy policies. All providers are contractually bound to data confidentiality.</p>
           </section>
 
           <section>
@@ -69,7 +71,12 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-white font-bold text-lg mb-3">9. Contact</h2>
-            <p className="text-zinc-400">For any privacy-related questions: <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a> | +92 329 188 1033</p>
+            <p className="text-zinc-400">
+              For any privacy-related questions:{' '}
+              <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a>
+              {' '}|{' '}
+              <a href="https://wa.me/923291881033" className="text-indigo-400 hover:underline">+92 329 188 1033</a>
+            </p>
           </section>
 
         </div>

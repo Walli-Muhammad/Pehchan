@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { Resend } from 'resend';
 
-// =============================================
-// Request Body Shape
-// =============================================
+// ─── Safepay integration is archived in src/app/api/_archived_safepay/ ────────
+// It can be reactivated by copying those files back and configuring the env vars.
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const SHIPPING_PKR = 250;
+const POD_PRICE_PKR = 5500;
+const WHATSAPP_NUMBER = '923291881033'; // international format, no +
+
 interface CheckoutItem {
   productId: string;
   variantId: string;
@@ -13,6 +19,7 @@ interface CheckoutItem {
 
 interface CheckoutRequest {
   items: CheckoutItem[];
+  paymentMethod: 'cod' | 'whatsapp'; // COD or WhatsApp-assisted JazzCash/EasyPaisa
   shipping: {
     customerName: string;
     customerEmail: string;
@@ -23,28 +30,12 @@ interface CheckoutRequest {
   };
 }
 
-const SHIPPING_PKR = 250;
-const POD_PRICE_PKR = 5500;
-
-// =============================================
-// POST /api/checkout
-//
-// Architecture (Database-First):
-// 1. Verify products & calculate server-side total
-// 2. Generate Safepay tracker
-// 3. INSERT order into Supabase with status='pending'
-//    and gateway_txn_ref=tracker  ← key for confirm-order lookup
-// 4. INSERT order_items
-// 5. Return checkoutUrl to the client
-//
-// No cookie is used. The DB row is the source of truth.
-// =============================================
 export async function POST(req: NextRequest) {
   try {
     const body: CheckoutRequest = await req.json();
-    const { items, shipping } = body;
+    const { items, shipping, paymentMethod = 'cod' } = body;
 
-    // ── Validation ────────────────────────────────────────────────────────────
+    // ── Validation ─────────────────────────────────────────────────────────────
     if (!items?.length) {
       return NextResponse.json({ error: 'Cart is empty.' }, { status: 400 });
     }
@@ -52,14 +43,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required shipping details.' }, { status: 400 });
     }
 
-    // ── Server-side price verification ────────────────────────────────────────
+    // ── Server-side price verification ─────────────────────────────────────────
     const regularItems   = items.filter((i) => !i.productId.startsWith('custom-'));
     const customPodItems = items.filter((i) =>  i.productId.startsWith('custom-'));
 
-    let productMap = new Map<string, {
-      title: string; base_price: number; image_url: string | null;
-      is_pod: boolean; is_active: boolean;
-    }>();
+    type ProductRow = { title: string; base_price: number; image_url: string | null; is_pod: boolean; is_active: boolean };
+    let productMap = new Map<string, ProductRow>();
 
     if (regularItems.length > 0) {
       const productIds = [...new Set(regularItems.map((i) => i.productId))];
@@ -71,7 +60,7 @@ export async function POST(req: NextRequest) {
       if (productError || !products) {
         return NextResponse.json({ error: 'Could not verify products.' }, { status: 500 });
       }
-      productMap = new Map(products.map((p) => [p.id, p]));
+      productMap = new Map(products.map((p) => [p.id, p as ProductRow]));
 
       for (const item of regularItems) {
         const product = productMap.get(item.productId);
@@ -81,7 +70,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── POD sentinel row ──────────────────────────────────────────────────────
+    // ── POD sentinel row ────────────────────────────────────────────────────────
     let podProductId: string | null = null;
     if (customPodItems.length > 0) {
       const { data: existing } = await supabaseAdmin
@@ -110,7 +99,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── Build verified line items & calculate total ───────────────────────────
+    // ── Build line items & calculate total ─────────────────────────────────────
     let subtotal = 0;
     const verifiedItems = [
       ...regularItems.map((item) => {
@@ -145,68 +134,29 @@ export async function POST(req: NextRequest) {
 
     const totalAmount = subtotal + SHIPPING_PKR;
 
-    // ── Generate Safepay tracker ──────────────────────────────────────────────
-    const safepayApiKey = process.env.SAFEPAY_API_KEY!;
-    const siteUrl       = process.env.NEXT_PUBLIC_SITE_URL!;
-
-    let tracker: string;
-
-    try {
-      const safepayRes = await fetch('https://sandbox.api.getsafepay.com/order/v1/init', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client:      safepayApiKey,
-          amount:      totalAmount,
-          currency:    'PKR',
-          environment: 'sandbox',
-        }),
-      });
-
-      const safepayData = await safepayRes.json();
-      console.log('[checkout] SAFEPAY INIT RESPONSE:', JSON.stringify(safepayData, null, 2));
-
-      if (!safepayRes.ok || !safepayData?.data?.token) {
-        console.error('[checkout] Safepay tracker generation failed:', safepayData);
-        return NextResponse.json({ error: 'Payment gateway error. Please try again.' }, { status: 502 });
-      }
-
-      tracker = safepayData.data.token;
-      console.log('[checkout] Safepay tracker obtained:', tracker);
-    } catch (networkErr) {
-      console.error('[checkout] Safepay network error:', networkErr);
-      return NextResponse.json({ error: 'Could not reach payment gateway.' }, { status: 502 });
-    }
-
-    // ── DATABASE-FIRST: Insert order immediately with status='pending' ─────────
-    // This removes the need for any cookie — the row is the source of truth.
-    console.log('[checkout] Inserting pending order into Supabase...');
-
+    // ── Insert order with status='pending' ─────────────────────────────────────
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
-        customer_name:   shipping.customerName,
-        customer_email:  shipping.customerEmail,
-        customer_phone:  shipping.customerPhone,
-        address_line1:   shipping.addressLine1,
-        city:            shipping.city,
-        province:        shipping.province,
-        gateway:         'safepay',
-        gateway_txn_ref: tracker,     // ← used by confirm-order to find this row
-        subtotal_pkr:    subtotal,
-        shipping_pkr:    SHIPPING_PKR,
-        total_pkr:       totalAmount,
-        status:          'pending',   // will be updated to 'payment_received' on success
+        customer_name:  shipping.customerName,
+        customer_email: shipping.customerEmail,
+        customer_phone: shipping.customerPhone,
+        address_line1:  shipping.addressLine1,
+        city:           shipping.city,
+        province:       shipping.province,
+        gateway:        paymentMethod, // 'cod' or 'whatsapp'
+        subtotal_pkr:   subtotal,
+        shipping_pkr:   SHIPPING_PKR,
+        total_pkr:      totalAmount,
+        status:         'pending',
       })
       .select('id')
       .single();
 
     if (orderError || !order) {
-      console.error('[checkout] SUPABASE ORDER INSERT ERROR:', orderError);
+      console.error('[checkout] ORDER INSERT ERROR:', orderError);
       return NextResponse.json({ error: 'Failed to record order. Please try again.' }, { status: 500 });
     }
-
-    console.log('[checkout] Pending order created — ID:', order.id);
 
     // Insert order items
     const { error: itemsError } = await supabaseAdmin
@@ -215,26 +165,107 @@ export async function POST(req: NextRequest) {
 
     if (itemsError) {
       console.error('[checkout] ORDER ITEMS INSERT ERROR:', itemsError);
-      // Roll back the order row so we don't leave orphaned records
       await supabaseAdmin.from('orders').delete().eq('id', order.id);
       return NextResponse.json({ error: 'Failed to record order items.' }, { status: 500 });
     }
 
-    console.log('[checkout] Order items inserted successfully');
+    const shortId = order.id.slice(0, 8).toUpperCase();
 
-    // ── Build Safepay checkout URL ────────────────────────────────────────────
-    const checkoutUrl =
-      `https://sandbox.api.getsafepay.com/checkout/pay` +
-      `?env=sandbox` +
-      `&beacon=${tracker}` +
-      `&source=custom` +
-      `&client=${safepayApiKey}` +
-      `&cancel_url=${encodeURIComponent(`${siteUrl}/cart`)}` +
-      `&redirect_url=${encodeURIComponent(`${siteUrl}/payment/success`)}`;
+    // ── Send confirmation email to customer ────────────────────────────────────
+    try {
+      const paymentInstructions = paymentMethod === 'cod'
+        ? `<p style="margin:0 0 16px;font-size:14px;color:#a1a1aa;line-height:1.7;">
+             Your order has been placed successfully for <strong style="color:#fff;">Cash on Delivery</strong>.
+             Our team will confirm your order by WhatsApp or phone before dispatch.
+           </p>`
+        : `<p style="margin:0 0 16px;font-size:14px;color:#a1a1aa;line-height:1.7;">
+             You selected <strong style="color:#fff;">JazzCash / EasyPaisa</strong> payment.
+             We will send you a payment request on your WhatsApp / phone shortly.
+             Your order will be confirmed once payment is received.
+           </p>`;
 
-    console.log('[checkout] Safepay checkout URL:', checkoutUrl);
+      await resend.emails.send({
+        from: 'Pehchan Orders <onboarding@resend.dev>',
+        to: [shipping.customerEmail],
+        subject: `Order Received — Pehchan #${shortId}`,
+        html: `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+          <body style="margin:0;padding:0;background:#09090b;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#d4d4d8;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:40px auto;background:#18181b;border-radius:16px;overflow:hidden;border:1px solid #27272a;">
+              <tr>
+                <td style="background:linear-gradient(135deg,#3730a3,#1e1b4b);padding:36px 40px;text-align:center;">
+                  <h1 style="margin:0;font-size:28px;font-weight:900;letter-spacing:0.15em;color:#ffffff;text-transform:uppercase;">PEHCHAN</h1>
+                  <p style="margin:6px 0 0;font-size:11px;letter-spacing:0.3em;color:#a5b4fc;text-transform:uppercase;">Order Received</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:36px 40px;">
+                  <h2 style="margin:0 0 16px;font-size:22px;font-weight:800;color:#ffffff;">Thanks, ${shipping.customerName}! 🎉</h2>
+                  ${paymentInstructions}
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background:#09090b;border-radius:12px;border:1px solid #27272a;overflow:hidden;margin-bottom:28px;">
+                    <tr style="border-bottom:1px solid #27272a;">
+                      <td style="padding:14px 20px;font-size:11px;font-weight:700;letter-spacing:0.15em;color:#52525b;text-transform:uppercase;">Order Reference</td>
+                      <td style="padding:14px 20px;text-align:right;font-size:13px;font-family:monospace;color:#e4e4e7;">#${shortId}</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #27272a;">
+                      <td style="padding:14px 20px;font-size:11px;font-weight:700;letter-spacing:0.15em;color:#52525b;text-transform:uppercase;">Total</td>
+                      <td style="padding:14px 20px;text-align:right;font-size:15px;font-weight:800;color:#ffffff;">Rs. ${totalAmount.toLocaleString('en-PK')}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:14px 20px;font-size:11px;font-weight:700;letter-spacing:0.15em;color:#52525b;text-transform:uppercase;">Payment</td>
+                      <td style="padding:14px 20px;text-align:right;font-size:13px;color:#e4e4e7;">${paymentMethod === 'cod' ? 'Cash on Delivery' : 'JazzCash / EasyPaisa'}</td>
+                    </tr>
+                  </table>
+                  <p style="font-size:12px;color:#52525b;line-height:1.7;">
+                    Questions? WhatsApp us at <a href="https://wa.me/${WHATSAPP_NUMBER}" style="color:#818cf8;">+92 329 188 1033</a>
+                    or email <a href="mailto:Pehchan.help@gmail.com" style="color:#818cf8;">Pehchan.help@gmail.com</a>
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
+        `,
+      });
+    } catch (emailErr) {
+      // Non-fatal — order is in DB, email just didn't send
+      console.error('[checkout] Email error:', emailErr);
+    }
 
-    return NextResponse.json({ success: true, checkoutUrl, tracker });
+    // ── Build WhatsApp message (for whatsapp payment method) ──────────────────
+    let whatsappUrl: string | null = null;
+    if (paymentMethod === 'whatsapp') {
+      const lineItems = verifiedItems
+        .map((i) => `  • ${i.product_title} × ${i.quantity} — Rs. ${(i.unit_price_pkr * i.quantity).toLocaleString('en-PK')}`)
+        .join('\n');
+
+      const message = [
+        `👋 Hi Pehchan! I'd like to complete my order:`,
+        ``,
+        `*Order #${shortId}*`,
+        lineItems,
+        `  • Shipping — Rs. ${SHIPPING_PKR.toLocaleString('en-PK')}`,
+        ``,
+        `*Total: Rs. ${totalAmount.toLocaleString('en-PK')}*`,
+        ``,
+        `Please send me a JazzCash/EasyPaisa payment request to *${shipping.customerPhone}*.`,
+        ``,
+        `Shipping to: ${shipping.addressLine1}, ${shipping.city}, ${shipping.province}`,
+      ].join('\n');
+
+      whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    }
+
+    return NextResponse.json({
+      success: true,
+      orderId: order.id,
+      shortId,
+      totalAmount,
+      paymentMethod,
+      whatsappUrl, // null for COD, URL string for whatsapp
+    });
 
   } catch (err) {
     console.error('[checkout] Unhandled error:', err);

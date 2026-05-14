@@ -126,3 +126,75 @@ export async function deleteCategory(id: string) {
   revalidatePath('/admin/categories');
   return { success: true };
 }
+
+// ── Orders ──
+
+export interface OrderItem {
+  id: string;
+  product_title: string;
+  product_image_url: string | null;
+  quantity: number;
+  unit_price_pkr: number;
+  pod_customization: Record<string, unknown> | null;
+  is_pod: boolean;
+}
+
+export interface Order {
+  id: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  address_line1: string;
+  city: string;
+  province: string;
+  gateway: string;
+  subtotal_pkr: number;
+  shipping_pkr: number;
+  total_pkr: number;
+  status: string;
+  created_at: string;
+  order_items?: OrderItem[];
+}
+
+export async function getOrders(): Promise<Order[]> {
+  const { data, error } = await supabaseAdmin
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('[getOrders] error:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+export async function getOrderById(id: string): Promise<Order | null> {
+  const { data, error } = await supabaseAdmin
+    .from('orders')
+    .select('*, order_items(*)')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('[getOrderById] error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function updateOrderStatus(id: string, status: string) {
+  const { error } = await supabaseAdmin
+    .from('orders')
+    .update({ status })
+    .eq('id', id);
+
+  if (error) {
+    console.error('[updateOrderStatus] error:', error.message);
+    return { success: false, error: error.message };
+  }
+  
+  revalidatePath('/admin/orders');
+  revalidatePath(`/admin/orders/${id}`);
+  return { success: true };
+}
