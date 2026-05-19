@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import SmoothScrollProvider from '@/components/providers/SmoothScrollProvider';
-import CustomCursor from '@/components/Interactions/CustomCursor';
 import Navbar from '@/components/Navbar/Navbar';
 import CartDrawer from '@/components/Cart/CartDrawer';
 import CheckoutModal from '@/components/Checkout/CheckoutModal';
@@ -28,7 +27,6 @@ export default function RootLayout({
           Global App Chrome — mounted OUTSIDE SmoothScrollProvider to guarantee 
           z-index supremacy and avoid transform/filter containing block clipping.
         */}
-        <CustomCursor />
         <Navbar />
         <CartDrawer />
         <CheckoutModal />

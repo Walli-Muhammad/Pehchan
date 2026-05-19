@@ -134,10 +134,9 @@ export default function Navbar() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <div className="hidden sm:flex items-center gap-1 opacity-70">
-              <span className="text-[10px] font-bold tracking-widest uppercase">Cmd</span>
-              <span className="text-[10px] font-bold">K</span>
-            </div>
+            <span className="text-xs font-semibold tracking-wider hidden sm:block uppercase">
+              Search
+            </span>
           </button>
 
           {/* Auth Controls — Wardrobe always visible, Sign Out auth-only */}

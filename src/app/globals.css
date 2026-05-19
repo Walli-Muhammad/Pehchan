@@ -2,11 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@media (pointer: fine) {
-  * {
-    cursor: none;
-  }
-}
+
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(12px); }
