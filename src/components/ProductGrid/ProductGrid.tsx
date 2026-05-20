@@ -46,7 +46,7 @@ function ProductCard({
     if (isHovered && images.length > 1) {
       intervalRef.current = setInterval(() => {
         setCurrentIndex((prev) => (prev + 1) % images.length);
-      }, 1800);
+      }, 750);
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -88,7 +88,7 @@ function ProductCard({
               style={{
                 opacity: idx === currentIndex ? 1 : 0,
                 transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-                transition: 'opacity 0.7s ease-in-out, transform 0.7s ease-in-out',
+                transition: 'opacity 0.4s ease-in-out, transform 0.4s ease-in-out',
                 zIndex: idx === currentIndex ? 1 : 0,
               }}
             />
