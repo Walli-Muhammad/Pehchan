@@ -75,7 +75,7 @@ export default function TermsPage() {
             <p className="text-zinc-400">
               Legal queries:{' '}
               <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">Pehchan.help@gmail.com</a>{' '}
-              or WhatsApp <a href="https://wa.me/923291881033" className="text-indigo-400 hover:underline">+92 329 188 1033</a>
+              or WhatsApp <a href="https://wa.me/923497839492" className="text-indigo-400 hover:underline">+92 349 7839492</a>
             </p>
           </section>
 

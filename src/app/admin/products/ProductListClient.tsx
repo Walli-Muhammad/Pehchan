@@ -2,6 +2,7 @@
 
 import { useTransition } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { deleteProduct } from '@/actions/admin';
 import type { Product } from '@/lib/supabase';
 
@@ -82,13 +83,21 @@ export default function ProductListClient({ products }: { products: Product[] })
                 )}
               </td>
               <td className="px-6 py-4 text-right">
-                <button
-                  onClick={() => handleDelete(product.id)}
-                  disabled={isPending}
-                  className="text-red-400 hover:text-red-300 font-medium text-xs px-3 py-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 transition-colors"
-                >
-                  Delete
-                </button>
+                <div className="flex justify-end items-center gap-2">
+                  <Link
+                    href={`/admin/products/edit/${product.id}`}
+                    className="text-indigo-400 hover:text-indigo-300 font-medium text-xs px-3 py-1.5 rounded-lg border border-indigo-500/20 hover:bg-indigo-500/10 transition-colors"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(product.id)}
+                    disabled={isPending}
+                    className="text-red-400 hover:text-red-300 font-medium text-xs px-3 py-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

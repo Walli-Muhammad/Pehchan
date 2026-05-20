@@ -200,7 +200,7 @@ export async function GET(req: NextRequest) {
                 <td style="padding:24px 40px;border-top:1px solid #27272a;text-align:center;">
                   <p style="margin:0;font-size:11px;color:#52525b;line-height:1.7;">
                     Questions? Reply to this email or WhatsApp us at
-                    <a href="https://wa.me/923291881033" style="color:#818cf8;">+92 329 188 1033</a><br/>
+                    <a href="https://wa.me/923497839492" style="color:#818cf8;">+92 349 7839492</a><br/>
                     Pehchan · DHA Phase 6, Lahore, Pakistan
                   </p>
                 </td>

@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import SmoothScrollProvider from '@/components/providers/SmoothScrollProvider';
 import Navbar from '@/components/Navbar/Navbar';
+import WhatsAppWidget from '@/components/Interactions/WhatsAppWidget';
 import CartDrawer from '@/components/Cart/CartDrawer';
 import CheckoutModal from '@/components/Checkout/CheckoutModal';
 import SearchModal from '@/components/Search/SearchModal';
@@ -31,6 +32,7 @@ export default function RootLayout({
         <CartDrawer />
         <CheckoutModal />
         <SearchModal />
+        <WhatsAppWidget />
 
         <SmoothScrollProvider>
           {children}

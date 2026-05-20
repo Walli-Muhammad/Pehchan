@@ -25,7 +25,7 @@ export default function ContactPage() {
             <div className="flex flex-col gap-5">
               {[
                 { icon: '📍', label: 'Address', value: 'Plot 12-B, DHA Phase 6, Lahore, Pakistan' },
-                { icon: '💬', label: 'WhatsApp', value: '+92 329 188 1033', href: 'https://wa.me/923291881033' },
+                { icon: '💬', label: 'WhatsApp', value: '+92 349 7839492', href: 'https://wa.me/923497839492' },
                 { icon: '✉️', label: 'General', value: 'Pehchan.help@gmail.com', href: 'mailto:Pehchan.help@gmail.com' },
                 { icon: '↩️', label: 'Returns', value: 'Pehchan.help@gmail.com', href: 'mailto:Pehchan.help@gmail.com' },
                 { icon: '🔒', label: 'Privacy', value: 'Pehchan.help@gmail.com', href: 'mailto:Pehchan.help@gmail.com' },

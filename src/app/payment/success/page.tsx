@@ -82,7 +82,7 @@ function SuccessContent() {
 
         <p className="text-zinc-600 text-xs">
           A confirmation email has been sent. Questions?{' '}
-          <a href="https://wa.me/923291881033" className="text-indigo-400 hover:underline">WhatsApp us</a>
+          <a href="https://wa.me/923497839492" className="text-indigo-400 hover:underline">WhatsApp us</a>
           {' '}or{' '}
           <a href="mailto:Pehchan.help@gmail.com" className="text-indigo-400 hover:underline">email us</a>.
         </p>

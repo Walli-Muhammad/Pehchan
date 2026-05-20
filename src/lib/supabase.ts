@@ -26,6 +26,7 @@ export interface Product {
   description: string | null;
   base_price: number;
   image_url: string | null;
+  image_urls?: string[] | null;
   category: string | null;
   is_pod: boolean;
   is_active: boolean;

@@ -60,6 +60,87 @@ export async function createProduct(
   return { success: true, error: null, productId: data.id };
 }
 
+export async function updateProduct(
+  id: string,
+  input: CreateProductInput,
+  variants: Array<{
+    size: string | null;
+    color: string | null;
+    color_hex: string | null;
+    sku: string | null;
+    stock_count: number;
+    price_delta: number;
+  }>
+) {
+  if (!id) {
+    return { success: false, error: 'Product ID is required.' };
+  }
+  if (!input.title.trim()) {
+    return { success: false, error: 'Product title is required.' };
+  }
+  if (isNaN(input.base_price) || input.base_price <= 0) {
+    return { success: false, error: 'A valid price is required.' };
+  }
+  if (!input.category) {
+    return { success: false, error: 'Category is required.' };
+  }
+
+  const { error: productError } = await supabaseAdmin
+    .from('products')
+    .update({
+      title:       input.title.trim(),
+      base_price:  input.base_price,
+      category:    input.category,
+      description: input.description.trim() || null,
+      is_pod:      input.is_pod,
+      image_url:   input.image_urls[0] ?? null,
+      image_urls:  input.image_urls,
+    })
+    .eq('id', id);
+
+  if (productError) {
+    console.error('[updateProduct] Supabase error updating product:', productError.message);
+    return { success: false, error: productError.message };
+  }
+
+  const { error: deleteVariantsError } = await supabaseAdmin
+    .from('variants')
+    .delete()
+    .eq('product_id', id);
+
+  if (deleteVariantsError) {
+    console.error('[updateProduct] Supabase error deleting old variants:', deleteVariantsError.message);
+    return { success: false, error: deleteVariantsError.message };
+  }
+
+  if (variants && variants.length > 0) {
+    const variantsToInsert = variants.map((v) => ({
+      product_id:  id,
+      size:        v.size?.trim() || null,
+      color:       v.color?.trim() || null,
+      color_hex:   v.color_hex?.trim() || null,
+      sku:         v.sku?.trim() || null,
+      stock_count: isNaN(v.stock_count) ? 0 : Number(v.stock_count),
+      price_delta: isNaN(v.price_delta) ? 0 : Number(v.price_delta),
+    }));
+
+    const { error: insertVariantsError } = await supabaseAdmin
+      .from('variants')
+      .insert(variantsToInsert);
+
+    if (insertVariantsError) {
+      console.error('[updateProduct] Supabase error inserting variants:', insertVariantsError.message);
+      return { success: false, error: insertVariantsError.message };
+    }
+  }
+
+  revalidatePath('/');
+  revalidatePath('/admin/products');
+  revalidatePath(`/admin/products/edit/${id}`);
+
+  return { success: true, error: null };
+}
+
 export async function deleteProduct(id: string) {
   const { error } = await supabaseAdmin.from('products').delete().eq('id', id);
   if (error) {

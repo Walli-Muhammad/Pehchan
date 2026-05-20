@@ -8,7 +8,7 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 const SHIPPING_PKR = 250;
 const POD_PRICE_PKR = 5500;
-const WHATSAPP_NUMBER = '923291881033'; // international format, no +
+const WHATSAPP_NUMBER = '923497839492'; // international format, no +
 
 interface CheckoutItem {
   productId: string;
@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
                     </tr>
                   </table>
                   <p style="font-size:12px;color:#52525b;line-height:1.7;">
-                    Questions? WhatsApp us at <a href="https://wa.me/${WHATSAPP_NUMBER}" style="color:#818cf8;">+92 329 188 1033</a>
+                    Questions? WhatsApp us at <a href="https://wa.me/${WHATSAPP_NUMBER}" style="color:#818cf8;">+92 349 7839492</a>
                     or email <a href="mailto:Pehchan.help@gmail.com" style="color:#818cf8;">Pehchan.help@gmail.com</a>
                   </p>
                 </td>
